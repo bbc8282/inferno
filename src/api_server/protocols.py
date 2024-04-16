@@ -15,3 +15,6 @@ class TestConfig(BaseModel):
 
     def get_model_name(self):
         return self.model.split("/")[-1]
+    
+    def get_model_full_name(self):
+        return self.model

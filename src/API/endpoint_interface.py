@@ -22,6 +22,10 @@ def get_streaming_inference(
         from .aws import streaming_inference
 
         return streaming_inference
+    elif endpoint_type == "vllm":
+        from .vllm import streaming_inference
+
+        return streaming_inference
     else:
         raise NotImplementedError
 
@@ -39,6 +43,10 @@ def get_inference(
         return inference
     elif endpoint_type == "aws":
         from .aws import inference
+
+        return inference
+    elif endpoint_type == "vllm":
+        from .vllm import inference
 
         return inference
     else:

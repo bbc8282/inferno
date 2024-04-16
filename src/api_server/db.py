@@ -6,7 +6,7 @@ from typing import List, Tuple
 import time
 import datetime
 
-db_path = "tmp/api_server.db"
+db_path = "/home/ubuntu/api_server.db"
 
 if not os.path.exists(db_path):
     conn = sqlite3.connect(db_path)

@@ -56,6 +56,7 @@ def run_with_config(id: str, config: TestConfig):
             "model": config.model,
             **config.kwargs,
         }
+        
         hash_func = hashlib.md5()
         hash_func.update(pickle.dumps(workload))
         workload_hash = hash_func.hexdigest()
@@ -75,7 +76,8 @@ def run_with_config(id: str, config: TestConfig):
             f.write(workload_hash)
         responses: List[ReqResponse] = sum([v.responses for v in raw_result], [])
         logging.info("start generate reports")
-        report = generate_request_level_report(responses, config.get_model_name())
+        hf_auth_key = config.kwargs.pop("hf_auth_key", None)
+        report = generate_request_level_report(responses, config.get_model_full_name(), hf_auth_key=hf_auth_key)
         pickle.dump(
             report,
             open(f"tmp/raw_report_{id}.pkl", "wb"),

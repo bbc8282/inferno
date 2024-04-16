@@ -87,7 +87,7 @@ def error_info(id: str):
 
 @app.get("/id_list")
 def id_list():
-    # return get_id_list()
+    return get_id_list()
     return []
 
 
@@ -176,6 +176,6 @@ if __name__ == "__main__":
         app,
         host="0.0.0.0",
         port=8000,
-        ssl_keyfile="key.pem",
-        ssl_certfile="fullchain.pem",
+#        ssl_keyfile="key.pem",
+#        ssl_certfile="fullchain.pem",
     )

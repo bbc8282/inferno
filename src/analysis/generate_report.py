@@ -4,29 +4,34 @@ from typing import List
 import numpy as np
 import bisect
 
-
-def count_tokens_from_str(s: str, tokenizer_name: str) -> int:
+def load_tokenizer(tokenizer_name: str, hf_auth_key: str = None):
     if "llama" in tokenizer_name or "Llama" in tokenizer_name:
-        return 1
+        return None  # Llama 모델의 경우 토크나이저가 필요 없다고 가정
     elif "gpt" in tokenizer_name:
         import tiktoken
-
-        enc = tiktoken.encoding_for_model(tokenizer_name)
-        return len(enc.encode(s))
+        return tiktoken.encoding_for_model(tokenizer_name)
     else:
-        try:
-            from transformers import AutoTokenizer
+        from transformers import AutoTokenizer
+        print(f"load tokenizer {tokenizer_name}")
+        if hf_auth_key:
+            return AutoTokenizer.from_pretrained(tokenizer_name, token=hf_auth_key)
+        else:
+            return AutoTokenizer.from_pretrained(tokenizer_name)
 
-            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-        except Exception as e:
-            print("load tokenizer failed, error info:", e)
-            raise e
+def count_tokens_from_str(s: str, tokenizer, tokenizer_name: str) -> int:
+    if tokenizer is None:
+        return 1  # Llama
+    elif "gpt" in tokenizer_name:
+        return len(tokenizer.encode(s))
+    else:
         return len(tokenizer(s, return_tensors="np")["input_ids"][0])
 
 
 def generate_request_level_report(
-    ress: List[ReqResponse], tokenizer_name: str, **kwargs
-) -> RequestLevelReport:
+    ress: List[ReqResponse], tokenizer_name: str, **kwargs) -> RequestLevelReport:
+    hf_auth_key = kwargs.pop("hf_auth_key", None)
+    tokenizer = load_tokenizer(tokenizer_name, hf_auth_key)
+    
     success = [res for res in ress if res.error_info is None]
     assert len(success) > 0, "all requests failed, cannot generate report."
     TTFT = [res.loggings[0][0] - res.start_timestamp for res in success]
@@ -34,12 +39,13 @@ def generate_request_level_report(
     time_per_request = [res.end_timestamp - res.start_timestamp for res in success]
     token_per_request = []
     token_timestamp = []
+    
     for c in ress:
         count = 0
         for pack in c.loggings:
             if not pack[1].content:
                 continue
-            num = count_tokens_from_str(pack[1].content, tokenizer_name)
+            num = count_tokens_from_str(pack[1].content, tokenizer, tokenizer_name)
             count += num
             token_timestamp.append((pack[0], num))
         if c.error_info is None:
