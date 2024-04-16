@@ -1,9 +1,6 @@
 # LLM-Serving-benchmark
 A benchmark framework for LLM serving performance, based on API call
 
-#### 프로젝트 개요
-이 프로젝트는 특정 API 서버 및 작업자(worker)를 구성하여 AI 모델을 테스트하고 관리하기 위한 시스템입니다. 아래는 시스템을 설치하고 실행하는 방법에 대한 자세한 안내입니다.
-
 #### 시작하기 전에
 이 프로젝트는 Python 3을 기반으로 하므로, Python 3가 설치되어 있어야 합니다.
 필요하다면 Python3 가상환경을 생성하세요.
