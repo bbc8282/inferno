@@ -6,7 +6,7 @@ import bisect
 
 def load_tokenizer(tokenizer_name: str, hf_auth_key: str = None):
     if "llama" in tokenizer_name or "Llama" in tokenizer_name:
-        return None  # Llama 모델의 경우 토크나이저가 필요 없다고 가정
+        return None  # Llama
     elif "gpt" in tokenizer_name:
         import tiktoken
         return tiktoken.encoding_for_model(tokenizer_name)
