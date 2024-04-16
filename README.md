@@ -76,6 +76,10 @@ source venv/bin/activate
 
    dataset_config.func, dataset_config.random_seed를 통해 Dataset내에서도 일부만을 사용해 테스트하도록 설정할 수 있습니다.
 
+   skip_idle_min은 설정된 시간 동안 아무런 작업이 발생하지 않을 경우, 해당 시간을 건너뛰어 불필요한 대기 시간 없이 다음 작업을 진행하도록 합니다.(변경 불필요)
+
+   time_step은 png 파일로 저장되는 결과 그래프의 X축의 Step 입니다.
+
    huggingface Access token이 필요한 경우(권한이 필요한 모델을 사용하는 경우), hf_auth_key를 통해 설정할 수 있습니다.
    
    등록에 성공한 경우 등록된 테스트의 ID를 반환합니다.
@@ -83,16 +87,16 @@ source venv/bin/activate
    "5fe3affd-f6ac-44cf-bbd6-f1d3661447ae"
    ```
 
-6. **테스트 실행**
+7. **테스트 실행**
    
    등록된 테스트를 시작합니다. `{id}`는 등록된 테스트의 고유 ID입니다.
    ```bash
    curl 127.0.0.1:8000/start_test/{id}
    ```
 
-7. **테스트 결과**
+8. **테스트 결과**
    
-   등록된 테스트 요청을 처리하고 다음과 같은 형식의 결과를 JSON 파일로 저장합니다:
+   등록된 테스트 요청을 처리하고 다음과 같은 형식의 결과를 tmp 폴더 내에 JSON 파일로 저장합니다:
 
    - report_{id}.json 파일 예시
    
