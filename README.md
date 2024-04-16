@@ -84,15 +84,17 @@ source venv/bin/activate
    ```
 
 6. **테스트 실행**
+   
    등록된 테스트를 시작합니다. `{id}`는 등록된 테스트의 고유 ID입니다.
    ```bash
    curl 127.0.0.1:8000/start_test/{id}
    ```
 
 7. **테스트 결과**
+   
    등록된 테스트 요청을 처리하고 다음과 같은 형식의 결과를 JSON 파일로 저장합니다:
 
-   report_{id}.json 파일 예시
+   - report_{id}.json 파일 예시
    
    ```json
    {
@@ -115,9 +117,16 @@ source venv/bin/activate
    }
    ```
    request_num: 처리된 요청의 총 수
+
    fail_rate: 실패율
+
    TTFT (Time To First Byte): 첫 번째 바이트까지의 시간에 대한 통계
+
    SLO (Service Level Objective): 서비스 수준 목표 달성률
+
    TPOT (Time Per Output Token): 출력 토큰당 시간에 대한 통계
+
    Throughput: 초당 처리량
+
+
    결과 파일은 각 테스트 세션의 성능을 평가하는 데 사용됩니다.
