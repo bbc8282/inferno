@@ -18,11 +18,12 @@ class RequestLevelReport:
     Throughput: float
     tokenizer_name: str
     total_tps_list: List[float]
+    total_duration: float
 
     def show_as_dict(self):
         return {
-            "request_num": self.request_num,
-            "fail_rate": self.fail_rate,
+            "Total_request_num": self.request_num,
+            "Fail_rate": self.fail_rate,
             "TTFT": {
                 "min": np.min(self.TTFT),
                 "max": np.max(self.TTFT),
@@ -36,7 +37,8 @@ class RequestLevelReport:
                 "avg": np.mean(self.TPOT),
                 "std": np.std(self.TPOT),
             },
-            "Throughput": self.Throughput,
+            "Throughput_token_per_sec": self.Throughput,
+            "Total_duration_sec": self.total_duration,
         }
 
     def visualize(self):
@@ -54,6 +56,7 @@ class VisitLevelReport:
         return {
             "visit_num": self.visit_num,
             "fail_rate": self.fail_rate,
+            "time_usage_per_visit": self.time_usage_per_visit,
             "request_level_report": self.request_level_report.show_as_dict(),
         }
 

@@ -52,7 +52,7 @@ def generate_request_level_report(
             token_per_request.append(count)
     token_timestamp.sort(key=lambda x: x[0])
     throughput_windows = kwargs.get("throughput_windows", 5)
-    throughput_step = kwargs.get("throughput_step", 1)
+    throughput_step = kwargs.get("throughput_step", 0.5)
     count_list = np.zeros(
         int((token_timestamp[-1][0] - token_timestamp[0][0]) / throughput_step) + 1
     )
@@ -73,6 +73,7 @@ def generate_request_level_report(
             TPOT.append(0)
         else:
             TPOT.append(ti / to)
+    total_duration = max(res.end_timestamp for res in ress) - min(res.start_timestamp for res in ress)
     return RequestLevelReport(
         request_num=len(ress),
         fail_rate=1 - len(success) / len(ress),
@@ -86,6 +87,7 @@ def generate_request_level_report(
         total_tps_list=sample_list,
         Throughput=np.max(sample_list),
         tokenizer_name=tokenizer_name,
+        total_duration = total_duration,
     )
 
 

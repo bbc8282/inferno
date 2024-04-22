@@ -83,7 +83,7 @@ def run_with_config(id: str, config: TestConfig):
             open(f"tmp/raw_report_{id}.pkl", "wb"),
         )
         with open(f"tmp/report_{id}.json", "w") as f:
-            json.dump(report.show_as_dict(), f)
+            json.dump(report.show_as_dict(), f, indent=4)
         RequestsStatus(responses, f"tmp/rs_{id}.png")
         Throughput(report, f"tmp/tp_{id}.png")
         set_status(id, "finish")
