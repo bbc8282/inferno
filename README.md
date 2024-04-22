@@ -15,6 +15,20 @@ source .venv/bin/activate
 
 #### 실행 과정
 
+0. **Dataset 권한 취득**
+   https://huggingface.co/datasets/lmsys/chatbot_arena_conversations
+   chatbot_arena_conversations 데이터셋의 경우 HuggingFace 계정에 권한이 부여되어있는 상태여야 사용할 수 있습니다.
+
+   https://huggingface.co/datasets/OpenAssistant/oasst1
+   oasst1의 경우 바로 사용할 수 있습니다.
+
+   권한 취득 후에
+   ```bash
+   huggingface-cli login
+   ```
+   이 필요합니다.
+
+
 1. **Python3 패키지 설치**
    ```bash
    python3 -m pip install -r requirements.txt
