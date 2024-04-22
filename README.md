@@ -9,8 +9,8 @@ A benchmark framework for LLM serving performance, based on API call
 ```bash
 sudo apt update && sudo apt upgrade -y 
 sudo apt-get install python3.10 python3.10-venv
-virtualenv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
 #### 실행 과정
