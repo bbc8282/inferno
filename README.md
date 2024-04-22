@@ -16,10 +16,14 @@ source .venv/bin/activate
 #### 실행 과정
 
 0. **Dataset 권한 취득**
+
    https://huggingface.co/datasets/lmsys/chatbot_arena_conversations
+
    chatbot_arena_conversations 데이터셋의 경우 HuggingFace 계정에 권한이 부여되어있는 상태여야 사용할 수 있습니다.
 
+
    https://huggingface.co/datasets/OpenAssistant/oasst1
+
    oasst1의 경우 바로 사용할 수 있습니다.
 
    권한 취득 후에
@@ -29,19 +33,19 @@ source .venv/bin/activate
    이 필요합니다.
 
 
-1. **Python3 패키지 설치**
+2. **Python3 패키지 설치**
    ```bash
    python3 -m pip install -r requirements.txt
    ```
 
-2. **tmp 폴더 생성**
+3. **tmp 폴더 생성**
 
    프로젝트의 일시적인 데이터를 저장할 임시 폴더를 생성합니다. (base 폴더 내에 생성)
    ```bash
    mkdir tmp
    ```
 
-3. **API 서버 실행**
+4. **API 서버 실행**
 
    프로젝트의 메인 API 서버를 실행합니다. 이 서버는 Config 등록 및 테스트 관리를 담당합니다.
    ```bash
@@ -49,7 +53,7 @@ source .venv/bin/activate
    ```
    이 명령은 `src/api_server/app.py` 파일을 실행합니다.
 
-4. **Worker 실행**
+5. **Worker 실행**
 
    백그라운드에서 작업을 처리할 worker를 실행합니다.
    ```bash
@@ -59,7 +63,7 @@ source .venv/bin/activate
 
    현재 여러개의 worker를 통한 병렬 작업 처리는 지원하지 않습니다.
 
-5. **테스트 등록**
+6. **테스트 등록**
 
    curl을 사용하여 API 서버에 테스트를 등록합니다. 아래는 예시로 제공된 JSON 본문을 포함한 POST 요청입니다.
    ```bash
