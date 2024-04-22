@@ -74,6 +74,7 @@ def generate_request_level_report(
         else:
             TPOT.append(ti / to)
     total_duration = max(res.end_timestamp for res in ress) - min(res.start_timestamp for res in ress)
+    rps = len(ress) / total_duration if total_duration > 0 else 0
     return RequestLevelReport(
         request_num=len(ress),
         fail_rate=1 - len(success) / len(ress),
@@ -88,6 +89,7 @@ def generate_request_level_report(
         Throughput=np.max(sample_list),
         tokenizer_name=tokenizer_name,
         total_duration = total_duration,
+        rps = rps,
     )
 
 

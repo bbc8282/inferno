@@ -19,6 +19,7 @@ class RequestLevelReport:
     tokenizer_name: str
     total_tps_list: List[float]
     total_duration: float
+    rps: float
 
     def show_as_dict(self):
         return {
@@ -39,6 +40,7 @@ class RequestLevelReport:
             },
             "Throughput_token_per_sec": self.Throughput,
             "Total_duration_sec": self.total_duration,
+            "RPS": self.rps,
         }
 
     def visualize(self):
