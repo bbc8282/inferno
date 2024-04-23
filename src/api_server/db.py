@@ -15,8 +15,13 @@ if not os.path.exists(db_path):
         "CREATE TABLE test (id text, config text, status text, model text, start_timestamp text, nickname text)"
     )
     cursor.execute("CREATE TABLE error (id text, error_info text)")
+    cursor.execute("""
+        CREATE TABLE heartbeat (
+            worker_id TEXT PRIMARY KEY,
+            timestamp REAL NOT NULL
+        );
+        """)
     conn.commit()
-
 
 def report_error(id: str, error_info: str):
     conn = sqlite3.connect(db_path)
@@ -148,3 +153,23 @@ def get_all_pending_tests() -> List[Tuple[str, TestConfig]]:
         (id, TestConfig.model_validate_json(config_str))
         for id, config_str in cursor.fetchall()
     ]
+    
+def get_all_worker_ids():
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT worker_id FROM heartbeat")
+    worker_ids = [row[0] for row in cursor.fetchall()]
+    return worker_ids
+
+def update_worker_heartbeat(worker_id: str, timestamp: float):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("INSERT OR REPLACE INTO heartbeat (worker_id, timestamp) VALUES (?, ?)", (worker_id, timestamp))
+    conn.commit()
+
+def get_last_heartbeat(worker_id: str) -> float:
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("SELECT MAX(timestamp) FROM heartbeat WHERE worker_id=?", (worker_id,))
+    row = cur.fetchone()
+    return row[0] if row[0] else 0.0

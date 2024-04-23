@@ -4,8 +4,9 @@ import pickle
 import threading
 import json
 import hashlib
+import socket
 from typing import List
-from .db import get_all_pending_tests, set_status, report_error
+from .db import get_all_pending_tests, set_status, report_error, update_worker_heartbeat
 from .protocols import TestConfig
 from ..workload_datasets.arena import ArenaDataset
 from ..workload_datasets.oasst1 import Oasst1Dataset
@@ -21,6 +22,7 @@ from ..analysis.generate_report import generate_request_level_report
 from ..simulate.protocol import ReqResponse
 from ..analysis.draw_pic import RequestsStatus, Throughput
 
+worker_id = socket.gethostname()
 
 def lambda_func_policy_check(f: str):
     import re
@@ -100,16 +102,17 @@ if __name__ == "__main__":
     from ..setup_logger import setup_logger
 
     setup_logger(level=logging.INFO)
-    logging.info("worker started")
+    logging.info(f"Worker started on {worker_id}")
     threads: List[threading.Thread] = []
     while True:
         pending_tests = get_all_pending_tests()
         if len(pending_tests) == 0:
+            update_worker_heartbeat(worker_id=worker_id, timestamp=time.time())
             time.sleep(1)
             continue
         for id, config in pending_tests:
             logging.info(
-                f"Found pending test {id}, endpoint: {config.url}, model: {config.model}"
+                f"{worker_id} Found pending test {id}, endpoint: {config.url}, model: {config.model}"
             )
             # launch test in other thread
             set_status(id, "running")

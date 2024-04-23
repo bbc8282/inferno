@@ -6,6 +6,7 @@ import logging
 import datetime
 import zipfile
 import glob
+import time
 
 from .protocols import TestConfig
 from .db import (
@@ -18,6 +19,8 @@ from .db import (
     get_id_list,
     set_nickname,
     delete_test,
+    get_last_heartbeat,
+    get_all_worker_ids,
 )
 from ..simulate.log_to_db import cur_requests_status_of_task, past_packs_of_task
 
@@ -34,6 +37,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+    
+@app.get("/workers")
+def list_workers():
+    worker_ids = get_all_worker_ids()
+    return {"workers": worker_ids}
+
+
+@app.get("/workers/{worker_id}")
+def worker_health_check(worker_id: str):
+    last_heartbeat = get_last_heartbeat(worker_id=worker_id)
+    if time.time() - last_heartbeat < 10:
+        return {"status": "healthy"}
+    else:
+        return {"status": "unresponsive"}
 
 
 @app.post("/register_test")
@@ -88,7 +105,6 @@ def error_info(id: str):
 @app.get("/id_list")
 def id_list():
     return get_id_list()
-    return []
 
 
 @app.get("/get/workload_hash/{id}")
