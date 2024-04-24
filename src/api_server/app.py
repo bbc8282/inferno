@@ -7,6 +7,9 @@ import datetime
 import zipfile
 import glob
 import time
+import requests
+import re
+from urllib.parse import urlparse, urlunparse
 
 from .protocols import TestConfig
 from .db import (
@@ -37,6 +40,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def parse_prometheus_text(metrics_text: str):
+    """Parses Prometheus text-format metrics into a structured JSON-like object."""
+    lines = metrics_text.strip().split("\n")
+    metrics = {}
+    for line in lines:
+        if line.startswith('#'):
+            continue
+        if "{" in line:
+            key, value = line.split(" ", 1)
+            labels_part = key[key.find("{")+1:key.find("}")]
+            key = key[:key.find("{")]
+            labels = {}
+            for label in labels_part.split(","):
+                label_key, label_value = label.split("=")
+                labels[label_key] = label_value.strip('"')
+            value = float(value)
+            if key not in metrics:
+                metrics[key] = []
+            metrics[key].append({"labels": labels, "value": value})
+        else:
+            key, value = line.split(" ")
+            value = float(value)
+            metrics[key] = {"value": value}
+    return metrics
     
 @app.get("/workers")
 def list_workers():
@@ -86,6 +114,22 @@ def delete_test_by_id(id: str):
     delete_test(id)
     return "OK"
 
+@app.get("/delete_all_tests")
+def delete_all_tests():
+    ids = get_id_list()
+    deleted_ids = []
+    errors = []
+    for id_info in ids:
+        test_id = id_info[0]
+        try:
+            delete_test(test_id)
+            deleted_ids.append(test_id)
+        except Exception as e:
+            errors.append((test_id, str(e)))
+    if errors:
+        return {"deleted_ids": deleted_ids, "errors": errors}
+    return {"deleted_ids": deleted_ids, "message": "All tests deleted successfully."}
+
 
 @app.get("/test_model/{id}")
 def test_model(id: str):
@@ -114,6 +158,25 @@ def get_workload_hash(id: str):
     else:
         with open("tmp/workload_hash_" + id + ".txt", mode="r") as f:
             return f.read()
+        
+@app.get("/get/vllm_metrics/{id}")
+def get_vllm_metrics(id: str):
+    config = get_config(id)
+    if config.endpoint_type == "vllm":
+        try:
+            parsed_url = urlparse(config.url)
+            metrics_url = urlunparse((parsed_url.scheme, parsed_url.netloc, '/metrics', '', '', ''))
+            response = requests.get(metrics_url)
+            response.raise_for_status()
+            try:
+                parsed_metrics = parse_prometheus_text(response.text)
+                return parsed_metrics
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to parse metrics: {str(e)}")
+        except requests.RequestException as e:
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from vllm server({metrics_url}): {str(e)}")
+    else:
+        raise HTTPException(status_code=400, detail=f"The specified server({metrics_url}) is not a vllm server.")
 
 
 @app.get("/report/throughput/{id}")
