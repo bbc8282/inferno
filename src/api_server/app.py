@@ -66,13 +66,13 @@ def parse_prometheus_text(metrics_text: str):
             metrics[key] = {"value": value}
     return metrics
     
-@app.get("/workers")
+@app.get("/workers", tags=['worker'])
 def list_workers():
     worker_ids = get_all_worker_ids()
     return {"workers": worker_ids}
 
 
-@app.get("/workers/{worker_id}")
+@app.get("/workers/{worker_id}", tags=['worker'])
 def worker_health_check(worker_id: str):
     last_heartbeat = get_last_heartbeat(worker_id=worker_id)
     if time.time() - last_heartbeat < 10:
@@ -159,7 +159,7 @@ def get_workload_hash(id: str):
         with open("tmp/workload_hash_" + id + ".txt", mode="r") as f:
             return f.read()
         
-@app.get("/get/vllm_metrics/{id}")
+@app.get("/get/vllm_metrics/{id}", tags=['vLLM'])
 def get_vllm_metrics(id: str):
     config = get_config(id)
     if config.endpoint_type == "vllm":
@@ -179,7 +179,7 @@ def get_vllm_metrics(id: str):
         raise HTTPException(status_code=400, detail=f"The specified server({metrics_url}) is not a vllm server.")
 
 
-@app.get("/report/throughput/{id}")
+@app.get("/report/throughput/{id}", tags=['report'])
 def report_throughput(id: str):
     if not os.path.exists("tmp/tp_" + id + ".png"):
         raise HTTPException(status_code=404, detail="Report not found")
@@ -188,7 +188,7 @@ def report_throughput(id: str):
         return StreamingResponse(file_like, media_type="image/png")
 
 
-@app.get("/report/requests_status/{id}")
+@app.get("/report/requests_status/{id}", tags=['report'])
 def report_requests_status(id: str):
     if not os.path.exists("tmp/rs_" + id + ".png"):
         raise HTTPException(status_code=404, detail="Report not found")
@@ -197,7 +197,7 @@ def report_requests_status(id: str):
         return StreamingResponse(file_like, media_type="image/png")
 
 
-@app.get("/report/json/{id}")
+@app.get("/report/json/{id}", tags=['report'])
 def report_json(id: str):
     if not os.path.exists("tmp/report_" + id + ".json"):
         raise HTTPException(status_code=404, detail="Report not found")
@@ -206,7 +206,7 @@ def report_json(id: str):
         return StreamingResponse(file_like, media_type="application/json")
 
 
-@app.get("/report/download/{id}")
+@app.get("/report/download/{id}", tags=['report'])
 def download_report(id: str):
     file_paths = glob.glob("tmp/*_" + id + ".*")
     if len(file_paths) == 0:
@@ -224,12 +224,12 @@ def download_report(id: str):
         )
 
 
-@app.get("/trace/status/{id}")
+@app.get("/trace/status/{id}", tags=['trace'])
 def trace_status(id: str):
     return cur_requests_status_of_task(id)
 
 
-@app.get("/trace/tps/{id}")
+@app.get("/trace/tps/{id}", tags=['trace'])
 def trace_tps(id: str, model: str, sample_len: int = 5):
     packs = past_packs_of_task(id, past_time=sample_len)
     from ..analysis.generate_report import count_tokens_from_str
