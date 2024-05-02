@@ -7,9 +7,7 @@ logger = logging.getLogger("openai")
 logger.setLevel(logging.WARNING)
 
 
-def get_streaming_inference(
-    endpoint_type: str,
-) -> Callable:
+async def get_streaming_inference(endpoint_type: str):
     if endpoint_type == "openai":
         from .openai import streaming_inference
 

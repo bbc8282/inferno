@@ -62,20 +62,36 @@ async def sim_visit(
                 inference_conf["model"] is not None
             ), f"<sim_visit {visit_index}>: model must be specified"
             if sim_req.stream:
-                async for res_piece in get_streaming_inference(endpoint_type)(
-                    dialog, **inference_conf
-                ):
-                    if isinstance(res_piece, Exception):
-                        raise res_piece
-                    res_loggings.append((time.time(), res_piece))
-                    if res_piece.content:
-                        log_new_pack(
-                            task_id,
-                            visit_index,
-                            sim_req.id,
-                            time.time(),
-                            res_piece.content,
-                        )
+                if endpoint_type == "friendliai":
+                    streaming_func = await get_streaming_inference(endpoint_type)
+                    async for res_piece in streaming_func(dialog, **inference_conf):
+                        if isinstance(res_piece, Exception):
+                            print(f"res_piece: {res_piece}")
+                            raise res_piece
+                        res_loggings.append((time.time(), res_piece))
+                        if res_piece.content:
+                            log_new_pack(
+                                task_id,
+                                visit_index,
+                                sim_req.id,
+                                time.time(),
+                                res_piece.content,
+                            )
+                else:
+                    async for res_piece in get_streaming_inference(endpoint_type)(
+                        dialog, **inference_conf
+                    ):
+                        if isinstance(res_piece, Exception):
+                            raise res_piece
+                        res_loggings.append((time.time(), res_piece))
+                        if res_piece.content:
+                            log_new_pack(
+                                task_id,
+                                visit_index,
+                                sim_req.id,
+                                time.time(),
+                                res_piece.content,
+                            )
                 ret_str = "".join(
                     [
                         p[1].content

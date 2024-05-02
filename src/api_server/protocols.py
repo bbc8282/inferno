@@ -42,4 +42,20 @@ class TestConfig(BaseModel):
         return self.model.split("/")[-1]
     
     def get_model_full_name(self):
-        return self.model
+        if self.endpoint_type == "friendliai":
+            if self.model == "meta-llama-3-70b-instruct":
+                return "meta-llama/Meta-Llama-3-70B-Instruct"
+            elif self.model == "llama-2-13b-chat":
+                return "meta-llama/Llama-2-13b-chat-hf"
+            elif self.model == "llama-2-70b-chat":
+                return "meta-llama/Llama-2-70b-chat-hf"
+            elif self.model == "mistral-7b-instruct-v0-2":
+                return "mistralai/Mistral-7B-Instruct-v0.2"
+            elif self.model == "mixtral-8x7b-instruct-v0-1":
+                return "mistralai/Mixtral-8x7B-Instruct-v0.1"
+            elif self.model == "gemma-7b-it":
+                return "google/gemma-1.1-7b-it"
+            else:
+                return self.model
+        else:
+            return self.model
