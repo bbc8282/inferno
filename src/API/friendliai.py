@@ -34,6 +34,7 @@ async def streaming_inference(
             async with session.post(url, json=payload, headers=headers) as response:
                 if response.status == 429:
                     logger.error('Rate limit exceeded, consider backing off')
+                    raise Exception('Rate limit exceeded, consider backing off')
                 async for chunk in response.content:
                     s = chunk.decode().strip()
                     if s.startswith('data:'):
@@ -42,20 +43,18 @@ async def streaming_inference(
                             break
                         try:
                             json_data = json.loads(data)
-                            for choice in json_data["choices"]:
-                                role = choice["delta"].get("role", None)
-                                content = choice["delta"].get("content", "")
-                                yield ResPiece(
-                                    index=choice["index"],
-                                    role=role,
-                                    content=content,
-                                    stop=choice.get("finish_reason", None),
-                                )
-                        except json.JSONDecodeError:
-                            logger.error(f"Failed to decode JSON: {data}")
-                            continue
+                        except:
+                            print(s)
+                        for choice in json_data["choices"]:
+                            role = choice["delta"].get("role", None)
+                            content = choice["delta"].get("content", "")
+                            yield ResPiece(
+                                index=choice["index"],
+                                role=role,
+                                content=content,
+                                stop=choice.get("finish_reason", None),
+                            )
     except Exception as e:
-        logging.exception(f"An error occurred during streaming inference: {str(e)}")
         yield e
 
 

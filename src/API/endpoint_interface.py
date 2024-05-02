@@ -7,7 +7,9 @@ logger = logging.getLogger("openai")
 logger.setLevel(logging.WARNING)
 
 
-async def get_streaming_inference(endpoint_type: str):
+def get_streaming_inference(
+    endpoint_type: str,
+) -> Callable:
     if endpoint_type == "openai":
         from .openai import streaming_inference
 
@@ -24,13 +26,13 @@ async def get_streaming_inference(endpoint_type: str):
         from .vllm import streaming_inference
 
         return streaming_inference
-    elif endpoint_type == "friendliai":
-        from .friendliai import streaming_inference
-
-        return streaming_inference
     else:
         raise NotImplementedError
 
+async def get_friendliai_streaming_inference():
+        from .friendliai import streaming_inference
+
+        return streaming_inference
 
 def get_inference(
     endpoint_type: str,

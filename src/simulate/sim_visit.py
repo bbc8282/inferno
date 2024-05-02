@@ -1,7 +1,7 @@
 from ..workload_datasets.protocol import Visit, VisitCtx
 from .protocol import ReqResponse, VisitResponse
 from typing import List, Tuple
-from ..API.endpoint_interface import get_streaming_inference
+from ..API.endpoint_interface import get_streaming_inference, get_friendliai_streaming_inference
 from ..API.api_protocol import ResPiece
 import time
 import asyncio
@@ -63,10 +63,10 @@ async def sim_visit(
             ), f"<sim_visit {visit_index}>: model must be specified"
             if sim_req.stream:
                 if endpoint_type == "friendliai":
-                    streaming_func = await get_streaming_inference(endpoint_type)
+                # Use SSE (Use Function Call)
+                    streaming_func = await get_friendliai_streaming_inference()
                     async for res_piece in streaming_func(dialog, **inference_conf):
                         if isinstance(res_piece, Exception):
-                            print(f"res_piece: {res_piece}")
                             raise res_piece
                         res_loggings.append((time.time(), res_piece))
                         if res_piece.content:
@@ -78,6 +78,7 @@ async def sim_visit(
                                 res_piece.content,
                             )
                 else:
+                # Do not use SSE (Use Coroutine)
                     async for res_piece in get_streaming_inference(endpoint_type)(
                         dialog, **inference_conf
                     ):
