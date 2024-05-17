@@ -19,10 +19,11 @@ class TestConfig(BaseModel):
                 {
                     "url": "http://209.20.156.226:8000/v1",
                     "model": "facebook/opt-125m",
+                    "key": "",
                     "dataset_name": "synthesizer",
                     "endpoint_type": "vllm",
                     "dataset_config": {
-                        "func": "lambda t: int(t / 0.1 + 1) if t < 30 else None",
+                        "func": "lambda t: int(t / 0.1 + 1) if t < 20 else None",
                         "prompt_source": "arena"
                     },
                     "kwargs": {
@@ -55,6 +56,8 @@ class TestConfig(BaseModel):
                 return "mistralai/Mixtral-8x7B-Instruct-v0.1"
             elif self.model == "gemma-7b-it":
                 return "google/gemma-1.1-7b-it"
+            elif "gpt" in self.model:
+                return self.model.split("/")[-1]
             else:
                 return self.model
         else:

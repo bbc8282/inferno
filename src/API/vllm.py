@@ -1,5 +1,5 @@
 import openai
-from typing import AsyncGenerator, List, Dict
+from typing import List, Dict
 from .api_protocol import ResPiece
 import logging
 

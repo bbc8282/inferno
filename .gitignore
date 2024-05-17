@@ -170,6 +170,7 @@ data/
 
 tmp
 node_modules
+*.out
 
 *.pem
 *.pem.outdate
