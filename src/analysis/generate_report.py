@@ -41,19 +41,15 @@ def generate_request_level_report(
     
     for c in ress:
         count = 0
-        print(f"Processing c: {c}")
         for pack in c.loggings:
-            print(f"Processing pack: {pack}")
             if len(pack) > 1 and pack[1].content:
-                print(f"pack[1].content: {pack[1].content}")
                 num = count_tokens_from_str(pack[1].content, tokenizer, tokenizer_name)
                 count += num
                 token_timestamp.append((pack[0], num))
         if c.error_info is None:
             token_per_request.append(count)
     
-    if not token_timestamp:
-        raise ValueError("Token timestamp is empty.")
+    assert token_timestamp, "all requests failed, cannot generate report."
     
     token_timestamp.sort(key=lambda x: x[0])
     throughput_windows = kwargs.get("throughput_windows", 5)
