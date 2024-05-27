@@ -26,6 +26,10 @@ def get_streaming_inference(
         from .vllm import streaming_inference
 
         return streaming_inference
+    elif endpoint_type == "tgi":
+        from .tgi import streaming_inference
+
+        return streaming_inference
     else:
         raise NotImplementedError
 
@@ -55,6 +59,10 @@ def get_inference(
         return inference
     elif endpoint_type == "friendliai":
         from .friendliai import inference
+
+        return inference
+    elif endpoint_type == "tgi":
+        from .tgi import inference
 
         return inference
     else:
