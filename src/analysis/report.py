@@ -30,6 +30,7 @@ class RequestLevelReport:
                 "max": np.max(self.TTFT),
                 "avg": np.mean(self.TTFT),
                 "std": np.std(self.TTFT),
+                "95_percentile": np.percentile(self.TTFT, 95),
             },
             "SLO": self.SLO,
             "TPOT": {
@@ -37,8 +38,12 @@ class RequestLevelReport:
                 "max": np.max(self.TPOT),
                 "avg": np.mean(self.TPOT),
                 "std": np.std(self.TPOT),
+                "95_percentile": np.percentile(self.TPOT, 95),
             },
-            "Throughput_token_per_sec": self.Throughput,
+            "Throughput_token_per_sec": {
+                "total": self.Throughput,
+                "95_percentile": np.percentile(self.total_tps_list, 95),
+            },
             "Total_duration_sec": self.total_duration,
             "RPS": self.rps,
         }
