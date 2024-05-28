@@ -40,8 +40,8 @@ class RequestLevelReport:
                 "std": np.std(self.TPOT),
                 "95_percentile": np.percentile(self.TPOT, 95),
             },
-            "Throughput_token_per_sec": {
-                "total": self.Throughput,
+            "Throughput": {
+                "max": self.Throughput,
                 "95_percentile": np.percentile(self.total_tps_list, 95),
             },
             "Total_duration_sec": self.total_duration,

@@ -9,6 +9,7 @@ import glob
 import time
 import requests
 import re
+import math
 from urllib.parse import urlparse, urlunparse
 
 from .protocols import TestConfig
@@ -42,27 +43,23 @@ app.add_middleware(
 )
 
 def parse_prometheus_text(metrics_text: str):
-    """Parses Prometheus text-format metrics into a structured JSON-like object."""
     lines = metrics_text.strip().split("\n")
     metrics = {}
     for line in lines:
-        if line.startswith('#'):
+        if line.startswith('#') or not line.strip():
             continue
-        if "{" in line:
-            key, value = line.split(" ", 1)
-            labels_part = key[key.find("{")+1:key.find("}")]
-            key = key[:key.find("{")]
+        key, value = line.split(None, 1)
+        if "{" in key:
+            key_base, labels_part = key.split("{", 1)
+            labels_part = labels_part.rstrip("}")
             labels = {}
             for label in labels_part.split(","):
-                label_key, label_value = label.split("=")
+                label_key, label_value = label.split("=", 1)
                 labels[label_key] = label_value.strip('"')
-            value = float(value)
-            if key not in metrics:
-                metrics[key] = []
-            metrics[key].append({"labels": labels, "value": value})
+            value = float(value) if not math.isnan(float(value)) else None
+            metrics.setdefault(key_base, []).append({"labels": labels, "value": value})
         else:
-            key, value = line.split(" ")
-            value = float(value)
+            value = float(value) if not math.isnan(float(value)) else None
             metrics[key] = {"value": value}
     return metrics
     
@@ -177,6 +174,27 @@ def get_vllm_metrics(id: str):
             raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from vllm server({metrics_url}): {str(e)}")
     else:
         raise HTTPException(status_code=400, detail=f"The specified server({metrics_url}) is not a vllm server.")
+
+
+@app.get("/get/frienfli_metrics/{id}", tags=['FriendliAI'])
+def get_friendli_metrics(id: str, port: str):
+    config = get_config(id)
+    if config.endpoint_type == "friendliai":
+        try:
+            parsed_url = urlparse(config.url)
+            netloc = f"{parsed_url.hostname}:{port}"
+            metrics_url = urlunparse((parsed_url.scheme, netloc, '/metrics', '', '', ''))
+            response = requests.get(metrics_url)
+            response.raise_for_status()
+            try:
+                parsed_metrics = parse_prometheus_text(response.text)
+                return parsed_metrics
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to parse metrics: {str(e)}")
+        except requests.RequestException as e:
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from friendliai server({config.url}): {str(e)}")
+    else:
+        raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a friendliai server.")
 
 
 @app.get("/report/throughput/{id}", tags=['report'])
