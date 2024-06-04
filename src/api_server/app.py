@@ -250,10 +250,11 @@ def trace_status(id: str):
 @app.get("/trace/tps/{id}", tags=['trace'])
 def trace_tps(id: str, model: str, sample_len: int = 5):
     packs = past_packs_of_task(id, past_time=sample_len)
-    from ..analysis.generate_report import count_tokens_from_str
+    from ..analysis.generate_report import count_tokens_from_str, load_tokenizer
 
     try:
-        tokens = sum([count_tokens_from_str(p, model) for p in packs])
+        tokenizer = load_tokenizer(model)
+        tokens = sum([count_tokens_from_str(p, tokenizer) for p in packs])
         return {
             "tps": tokens / sample_len,
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

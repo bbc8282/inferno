@@ -6,14 +6,14 @@ import bisect
 
 def load_tokenizer(tokenizer_name: str, hf_auth_key: str = None):
     from transformers import AutoTokenizer
-    print(f"load tokenizer {tokenizer_name}")
     if hf_auth_key:
         return AutoTokenizer.from_pretrained(tokenizer_name, token=hf_auth_key)
     else:
         return AutoTokenizer.from_pretrained(tokenizer_name)
 
-def count_tokens_from_str(s: str, tokenizer, tokenizer_name: str) -> int:
-    return len(tokenizer(s, return_tensors="np")["input_ids"][0])
+def count_tokens_from_str(s: str, tokenizer) -> int:
+    tokens = tokenizer(s, return_tensors="np")["input_ids"][0]
+    return len(tokens)
 
 def generate_request_level_report(
     ress: List[ReqResponse], tokenizer_name: str, **kwargs) -> RequestLevelReport:
