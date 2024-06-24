@@ -33,7 +33,7 @@ def generate_request_level_report(
         count = 0
         for pack in c.loggings:
             if len(pack) > 1 and pack[1].content:
-                num = count_tokens_from_str(pack[1].content, tokenizer, tokenizer_name)
+                num = count_tokens_from_str(pack[1].content, tokenizer)
                 count += num
                 token_timestamp.append((pack[0], num))
         if c.error_info is None:
