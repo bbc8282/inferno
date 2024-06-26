@@ -1,69 +1,46 @@
-import openai
 from typing import Callable, List, Dict
 from .api_protocol import ResPiece
 import logging
+import importlib
 
-logger = logging.getLogger("openai")
+logger = logging.getLogger("interface")
 logger.setLevel(logging.WARNING)
 
+# Centralized endpoint to module mapping
+endpoint_to_module: Dict[str, str] = {
+    "openai": ".openai",
+    "togetherai": ".togetherai",
+    "aws": ".aws",
+    "vllm": ".vllm",
+    "friendliai": ".friendliai",
+    "tgi": ".tgi",
+}
 
-def get_streaming_inference(
-    endpoint_type: str,
-) -> Callable:
-    if endpoint_type == "openai":
-        from .openai import streaming_inference
-
-        return streaming_inference
-    elif endpoint_type == "togetherai":
-        from .togetherai import streaming_inference
-
-        return streaming_inference
-    elif endpoint_type == "aws":
-        from .aws import streaming_inference
-
-        return streaming_inference
-    elif endpoint_type == "vllm":
-        from .vllm import streaming_inference
-
-        return streaming_inference
-    elif endpoint_type == "tgi":
-        from .tgi import streaming_inference
-
-        return streaming_inference
-    else:
-        raise NotImplementedError
+def get_streaming_inference(endpoint_type: str,) -> Callable:
+    module_name = endpoint_to_module.get(endpoint_type)
+    if not module_name:
+        raise NotImplementedError(f"Endpoint '{endpoint_type}' is not implemented.")
+    try:
+        module = importlib.import_module(module_name, package=__package__)
+        return getattr(module, "streaming_inference")
+    except (ImportError, AttributeError) as e:
+        logger.error(f"Error loading streaming_inference() for endpoint {endpoint_type}: {e}")
+        raise
 
 async def get_friendliai_streaming_inference():
-        from .friendliai import streaming_inference
+    """
+    For friendliai, it is called asynchronously and in a separate method.
+    """
+    from .friendliai import streaming_inference
+    return streaming_inference
 
-        return streaming_inference
-
-def get_inference(
-    endpoint_type: str,
-) -> Callable:
-    if endpoint_type == "openai":
-        from .openai import inference
-
-        return inference
-    elif endpoint_type == "togetherai":
-        from .togetherai import inference
-
-        return inference
-    elif endpoint_type == "aws":
-        from .aws import inference
-
-        return inference
-    elif endpoint_type == "vllm":
-        from .vllm import inference
-
-        return inference
-    elif endpoint_type == "friendliai":
-        from .friendliai import inference
-
-        return inference
-    elif endpoint_type == "tgi":
-        from .tgi import inference
-
-        return inference
-    else:
-        raise NotImplementedError
+def get_inference(endpoint_type: str,) -> Callable:
+    module_name = endpoint_to_module.get(endpoint_type)
+    if not module_name:
+        raise NotImplementedError(f"Endpoint '{endpoint_type}' is not implemented.")
+    try:
+        module = importlib.import_module(module_name, package=__package__)
+        return getattr(module, "inference")
+    except (ImportError, AttributeError) as e:
+        logger.error(f"Error loading inference() for endpoint {endpoint_type}: {e}")
+        raise

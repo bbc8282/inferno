@@ -1,4 +1,5 @@
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Callable
+from functools import wraps
 from .protocol import Visit, NotNoneOffset, Workload
 import logging
 
@@ -65,6 +66,19 @@ def cache(root_dir="tmp/"):
 
         return wrapper
 
+    return decorator
+
+def filter_workload_length(min_length: int = 0, max_length: int = float('inf')):
+    def decorator(f: Callable[..., Workload]) -> Callable[..., Workload]:
+        @wraps(f)
+        def wrapper(*args, **kwargs) -> Workload:
+            workload = f(*args, **kwargs)
+            filtered_workload = [
+                (timestamp, visit) for timestamp, visit in workload
+                if min_length <= len(visit) <= max_length
+            ]
+            return filtered_workload
+        return wrapper
     return decorator
 
 

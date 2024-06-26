@@ -112,3 +112,4 @@ if __name__ == "__main__":
         assert_visit_is_legal(d[1])
     print(f"load time: {end_time - start_time}")
     print(f"Time used: {time.time() - start_time}")
+    

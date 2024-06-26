@@ -19,9 +19,10 @@ class TestConfig(BaseModel):
                 {
                     "url": "http://209.20.156.226:8000/v1",
                     "model": "facebook/opt-125m",
-                    "key": "",
+                    "key": "EMPTY",
                     "dataset_name": "synthesizer",
                     "endpoint_type": "vllm",
+                    "legacy": "false",
                     "dataset_config": {
                         "func": "lambda t: int(t / 0.1 + 1) if t < 20 else None",
                         "prompt_source": "arena"
@@ -29,9 +30,7 @@ class TestConfig(BaseModel):
                     "kwargs": {
                         "temperature": 0.9,
                         "top_p": 1,
-                        "max_tokens": 512,
-                        "time_step": 0.01,
-                        "request_timeout": 3600
+                        "max_tokens": 512
                     }
                 }
             ]
