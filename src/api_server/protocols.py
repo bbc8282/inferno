@@ -10,6 +10,7 @@ class TestConfig(BaseModel):
     key: str = "EMPTY"
     random_seed: int | None = None
     dataset_config: dict = {}
+    legacy: bool = False
     workload_range: Tuple[int | None, int | None] = (None, None)
     kwargs: dict = {}
 
@@ -22,7 +23,7 @@ class TestConfig(BaseModel):
                     "key": "EMPTY",
                     "dataset_name": "synthesizer",
                     "endpoint_type": "vllm",
-                    "legacy": "false",
+                    "legacy": False,
                     "dataset_config": {
                         "func": "lambda t: int(t / 0.1 + 1) if t < 20 else None",
                         "prompt_source": "arena"

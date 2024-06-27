@@ -58,6 +58,7 @@ def run_with_config(id: str, config: TestConfig):
             "api_base": config.url,
             "api_key": config.key,
             "model": config.model,
+            "legacy": config.legacy,
             **config.kwargs,
         }
         
