@@ -2,6 +2,7 @@ import openai
 from typing import List, Dict
 from .api_protocol import ResPiece
 import logging
+from .utils import prepare_inference_payload, handle_inference_response
 
 logger = logging.getLogger("tgi")
 logger.setLevel(logging.WARNING)
@@ -15,45 +16,25 @@ async def streaming_inference(
 ):
     try:
         openai.api_base = kwargs.pop("api_base")
+        openai.api_key = kwargs.pop("api_key", "EMPTY")
+        legacy = kwargs.pop('legacy', False)
         kwargs.pop("stream", None)
         
-        if kwargs.pop('legacy', False):
-            completion = await openai.Completion.acreate(
-                model=kwargs.pop("model"),
-                prompt=format_legacy_dialog(dialog),
-                stream=True,
-                **kwargs,
-            )
-            async for chunk in completion:
-                if "choices" in chunk:
-                    for choice in chunk.choices:
-                        yield ResPiece(
-                            index=choice.index,
-                            role=None,
-                            content=choice.text,
-                            stop=choice.finish_reason,
-                        )
-                    
-        else:
-            completion = await openai.ChatCompletion.acreate(
-                model=kwargs.pop("model"),
-                messages=dialog,
-                stream=True,
-                **kwargs,
-            )
-            async for chunk in completion:
+        payload = prepare_inference_payload(dialog, kwargs.pop("model"), True, legacy, **kwargs)
+        
+        completion = await (openai.Completion.acreate(**payload) if legacy 
+                            else openai.ChatCompletion.acreate(**payload))
+        
+        async for chunk in completion:
+            if "choices" in chunk:
                 for choice in chunk.choices:
-                    role, content = None, None
-                    if "role" in choice.delta:
-                        role = choice.delta["role"]
-                    if "content" in choice.delta:
-                        content = choice.delta["content"]
                     yield ResPiece(
                         index=choice.index,
-                        role=role,
-                        content=content,
+                        role=None if legacy else choice.delta.get("role"),
+                        content=choice.text if legacy else choice.delta.get("content"),
                         stop=choice.finish_reason,
                     )
+                    
     except openai.error.OpenAIError as e:
         logger.error(f"OpenAI API error: {e}")
         yield e
@@ -67,19 +48,13 @@ def inference(
     **kwargs,
 ) -> List[Dict[str, str]]:
     openai.api_base = kwargs.pop("api_base")
+    openai.api_key = kwargs.pop("api_key", "EMPTY")
+    legacy = kwargs.pop('legacy', False)
     kwargs.pop("stream", None)
     
-    if kwargs.pop('legacy', False):
-        completion = openai.Completion.create(
-            model=kwargs.pop("model"),
-            prompt=format_legacy_dialog(dialog),
-            **kwargs,
-        )
-        return [c["text"] for c in completion.choices]
-    else:
-        completion = openai.ChatCompletion.create(
-            model=kwargs.pop("model"),
-            messages=dialog,
-            **kwargs,
-        )
-        return [c["message"]["content"] for c in completion.choices]
+    payload = prepare_inference_payload(dialog, kwargs.pop("model"), False, legacy, **kwargs)
+    
+    completion = (openai.Completion.create(**payload) if legacy 
+                  else openai.ChatCompletion.create(**payload))
+    
+    return handle_inference_response(completion, legacy)
