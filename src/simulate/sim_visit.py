@@ -6,14 +6,12 @@ from ..API.api_protocol import ResPiece
 import time
 import asyncio
 import logging
-import time
 from .log_to_db import (
     init_request,
     mark_success_for_request,
     mark_error_for_request,
     log_new_pack,
 )
-
 
 async def sim_visit(
     visit: Visit, visit_index: int, task_id: str, endpoint_type: str, **kwargs
@@ -24,36 +22,23 @@ async def sim_visit(
     visit_start_time = time.time()
     ctx: VisitCtx = dict()
     responses: List[ReqResponse] = []
-    last_finish = None
-    HUMAN_INPUT_WPS = kwargs.pop("human_input_wps", 1.0)
-    TIME_TOLERANCE = kwargs.pop("time_tolerance", 0.1)
     logging.debug(
         f"<sim_visit {visit_index}>: launch visit sim, size of dialog {len(visit)}."
     )
-    for scheduled_offest, sim_req in visit:
-        launch_latency = 0.0
+    for scheduled_offset, sim_req in visit:
         dialog = sim_req.messages(ctx)
         res_loggings: List[Tuple[float, ResPiece]] = []
         inference_conf = sim_req.shadow_params(**kwargs)
-        if scheduled_offest is not None:
-            scheduled_time = visit_start_time + scheduled_offest
-            if scheduled_time - time.time() > -TIME_TOLERANCE:
-                logging.debug(
-                    f"<{sim_req.id}>: wait for scheduled time, after {scheduled_time - time.time()}."
-                )
-                await asyncio.sleep(scheduled_time - time.time())
-            else:
-                logging.warning(
-                    f"<{sim_req.id}>: Request cannot be executed in time, {time.time() - scheduled_time} s late, launch immediately."
-                )
-                launch_latency = time.time() - scheduled_time
-        elif last_finish is not None:
-            sim_time = len(dialog[-1]["content"].split()) / HUMAN_INPUT_WPS
-            logging.debug(f"<{sim_req.id}>: simulate human input, after {sim_time} s.")
-            await asyncio.sleep(sim_time)
-        else:
-            logging.debug(f"<{sim_req.id}>: launch immediately.")
+        
+        if scheduled_offset is not None:
+            scheduled_time = visit_start_time + scheduled_offset
+            current_time = time.time()
+            if current_time < scheduled_time:
+                await asyncio.sleep(scheduled_time - current_time)
+            
         req_start_time = time.time()
+        launch_latency = max(0, req_start_time - (visit_start_time + scheduled_offset)) if scheduled_offset is not None else 0
+        
         logging.debug(f"<{sim_req.id}>: start inference.")
         init_request(task_id, visit_index, sim_req.id, req_start_time, launch_latency)
         ret_str = ""
@@ -63,7 +48,7 @@ async def sim_visit(
             ), f"<sim_visit {visit_index}>: model must be specified"
             if sim_req.stream:
                 if endpoint_type == "friendliai":
-                # Use SSE (Use Function Call)
+                    # Use SSE (Use Function Call)
                     streaming_func = await get_friendliai_streaming_inference()
                     async for res_piece in streaming_func(dialog, **inference_conf):
                         if isinstance(res_piece, Exception):
@@ -78,7 +63,7 @@ async def sim_visit(
                                 res_piece.content,
                             )
                 else:
-                # Do not use SSE (Use Coroutine)
+                    # Do not use SSE (Use Coroutine)
                     async for res_piece in get_streaming_inference(endpoint_type)(
                         dialog, **inference_conf
                     ):
@@ -103,19 +88,19 @@ async def sim_visit(
             else:
                 raise NotImplementedError
             logging.debug(f"<{sim_req.id}>: finish inference.")
-            last_finish = time.time()
+            end_time = time.time()
             ctx[sim_req.id] = ret_str
             responses.append(
                 ReqResponse(
                     req_id=sim_req.id,
                     start_timestamp=req_start_time,
-                    end_timestamp=last_finish,
-                    dialog=dialog + [{"role": "assitant", "content": ret_str}],
+                    end_timestamp=end_time,
+                    dialog=dialog + [{"role": "assistant", "content": ret_str}],
                     loggings=res_loggings,
                     launch_latency=launch_latency,
                 )
             )
-            mark_success_for_request(task_id, visit_index, sim_req.id, last_finish)
+            mark_success_for_request(task_id, visit_index, sim_req.id, end_time)
         except Exception as e:
             import traceback
 
@@ -131,7 +116,7 @@ async def sim_visit(
                     req_id=sim_req.id,
                     start_timestamp=req_start_time,
                     end_timestamp=exit_time,
-                    dialog=dialog + [{"role": "assitant", "content": ret_str}],
+                    dialog=dialog + [{"role": "assistant", "content": ret_str}],
                     loggings=res_loggings,
                     launch_latency=launch_latency,
                     error_info=(str(e), infos),
@@ -145,7 +130,6 @@ async def sim_visit(
         responses=responses,
         failed=responses[-1].error_info is not None,
     )
-
 
 if __name__ == "__main__":
     from ..workload_datasets.protocol import Visit, VisitCtx

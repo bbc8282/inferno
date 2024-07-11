@@ -10,45 +10,17 @@ from .log_to_db import init_task, mark_finish_for_task
 
 async def sim_workload_in_single_thread(
     workload: List[Tuple[float, List[Any]]],
-    sim_start_time: float | None,
     endpoint_type: str,
     task_id: str = "",
     **kwargs: Dict[str, Any],
 ) -> List[VisitResponse]:
-    """
-    Simulate a workload and return the responses.
-
-    Parameters:
-    - workload: List of tuples, each containing a float and a list.
-    - sim_start_time: The start time for the simulation.
-    - endpoint_type: The type of endpoint.
-    - task_id: The ID of the task.
-    - kwargs: Additional keyword arguments.
-
-    Returns:
-    - List of VisitResponse objects.
-    """
-    
     if not task_id:
         task_id = str(uuid4())
         logging.info(f"sim_workload_in_single_thread: task_id is not set, set to {task_id}")
     
     TIME_TOLERANCE = kwargs.get("time_tolerance", 0.1)
-    SKIP_IDLE_MIN: float | None = kwargs.pop("skip_idle_min", None)
     
-    if sim_start_time is None:
-        logging.info(f"<{task_id[:4]}>: sim_start_time is not set, simulating immediately.")
-    elif sim_start_time - time.time() < TIME_TOLERANCE:
-        logging.warning(
-            f"sim_start_time is set to {sim_start_time}, but current time is {time.time()}, simulating run immediately."
-        )
-    else:
-        logging.info(
-            f"sim_start_time is set to {sim_start_time}, simulating after {sim_start_time - time.time()} seconds."
-        )
-        await asyncio.sleep(sim_start_time - time.time())
-    
-    logging.info(f"<{task_id[:4]}>:: start simulating.")
+    logging.info(f"<{task_id[:4]}>: start simulating.")
 
     tasks: List[Tuple[int, asyncio.Task]] = []
     responses: List[Tuple[int, VisitResponse]] = []
@@ -59,7 +31,6 @@ async def sim_workload_in_single_thread(
     next_index = 0
     total_visit_num = len(workload)
     total_req_num = sum(len(v) for _, v in workload)
-    skip_offset = 0
     finish_num = 0
     start_timestamp = time.time()
     
@@ -67,21 +38,14 @@ async def sim_workload_in_single_thread(
     
     while True:
         # Launch new tasks
-        cur_offset = time.time() - start_timestamp + skip_offset
+        cur_offset = time.time() - start_timestamp
         logging.debug(f"current offset {cur_offset}")
 
         if next_index < total_visit_num:
             assert workload[next_index][0] is not None
             logging.debug(f"next visit {next_index} scheduled at {workload[next_index][0]}")
-            launch_immediately = False
             
-            if cur_offset - workload[next_index][0] > TIME_TOLERANCE:
-                logging.warning(
-                    f"<{task_id[:4]}>: visit {next_index} cannot be executed in time, late {cur_offset - workload[next_index][0]}."
-                )
-                launch_immediately = True
-            
-            if abs(cur_offset - workload[next_index][0]) < TIME_TOLERANCE or launch_immediately:
+            if cur_offset >= workload[next_index][0]:
                 logging.debug(f"launch visit {next_index}")
                 tasks.append(
                     (
@@ -105,10 +69,9 @@ async def sim_workload_in_single_thread(
                     f"<{task_id[:4]}>: launch visit {next_index - 1} finished. next visit {next_index} scheduled at {next_visit_time} after {time_until_next}"
                 )
 
-        # Recycle finished tasks & check if system is idle & check if all visits are done
+        # Recycle finished tasks & check if all visits are done
         if tasks:
             to_remove = []
-            unfinished_count = 0
             
             for i in range(min(CHECK_SIZE, len(tasks))):
                 if tasks[i][1].done():
@@ -118,22 +81,12 @@ async def sim_workload_in_single_thread(
                     )
                     responses.append((tasks[i][0], tasks[i][1].result()))
                     to_remove.append(i)
-                else:
-                    unfinished_count += 1
             
             for i in reversed(to_remove):
                 tasks.pop(i)
             
-            logging.debug(f"finished {len(to_remove)} tasks, {unfinished_count} tasks not finished.")
+            logging.debug(f"finished {len(to_remove)} tasks, {len(tasks)} tasks not finished.")
         else:
-            next_time = workload[next_index][0] if next_index < total_visit_num else None
-            
-            if SKIP_IDLE_MIN and next_time:
-                skip = max(0, next_time - cur_offset - 10 * TIME_STEP - SKIP_IDLE_MIN)
-                if skip > 0:
-                    skip_offset += skip
-                    logging.info(f"<{task_id[:4]}>: skip idle time {skip}, skip_offset now {skip_offset}")
-            
             if next_index == total_visit_num:
                 break
 
