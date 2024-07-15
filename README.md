@@ -1,5 +1,7 @@
-# LLM-Serving-benchmark
-A benchmark framework for LLM serving performance, based on API call
+# Inferno(**Infer**ence **N**umerical **O**ptimization) - LLM Serving benchmark
+![7BC1E7EE-E2EB-4EFE-96F2-7C6850D52882](https://github.com/bbc8282/inferno/assets/39871889/e7aa435e-6ca2-4b5a-992d-8e5b5dcee2fd)
+
+A benchmark framework for LLM serving performance, based on HTTP API call
 
 #### 시작하기 전에
 이 프로젝트는 Python 3을 기반으로 하므로, Python 3가 설치되어 있어야 합니다.
@@ -83,8 +85,6 @@ source .venv/bin/activate
                    "temperature": 0.9,
                    "top_p": 1,
                    "max_tokens": 512,
-                   "skip_idle_min": 20,
-                   "time_step": 0.01,
                    "request_timeout": 3600,
                    "hf_auth_key": "hf_1234567890qwertyuiop"
                }
