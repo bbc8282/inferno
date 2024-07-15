@@ -94,10 +94,6 @@ source .venv/bin/activate
 
    Parameter 상세: Test parameter (JSON body) - https://confluence.tde.sktelecom.com/display/ASTR/Request+JSON+body
 
-   skip_idle_min은 설정된 시간 동안 아무런 작업이 발생하지 않을 경우, 해당 시간을 건너뛰어 불필요한 대기 시간 없이 다음 작업을 진행하도록 합니다.(변경 불필요)
-
-   time_step은 png 파일로 저장되는 결과 그래프의 X축의 Step 입니다.
-
    huggingface Access token이 필요한 경우(권한이 필요한 모델을 사용하는 경우), hf_auth_key를 통해 설정할 수 있습니다.
    
    등록에 성공한 경우 등록된 테스트의 ID를 반환합니다.
@@ -120,24 +116,29 @@ source .venv/bin/activate
    
    ```json
    {
-        "Total_request_num": 991,
-        "Fail_rate": 0.0,
-        "TTFT": {
-            "min": 0.36063361167907715,
-            "max": 0.7135050296783447,
-            "avg": 0.4604542079775413,
-            "std": 0.04528907291229537
-        },
-        "SLO": 1.0,
-        "TPOT": {
-            "min": 0.005236488603599245,
-            "max": 0.22946476936340332,
-            "avg": 0.012054634817048056,
-            "std": 0.010846697113091337
-        },
-        "Throughput_token_per_sec": 2202.2,
-        "Total_duration_sec": 105.72544741630554,
-        "RPS": 9.373334653272536
+       "Total_request_num": 991,
+       "Fail_rate": 0.0,
+       "TTFT": {
+           "min": 0.33705902099609375,
+           "max": 2.5493662357330322,
+           "avg": 0.49339660530013346,
+           "std": 0.33394222764902065,
+           "95_percentile": 0.5807063579559326
+       },
+       "SLO": 1.0,
+       "TPOT": {
+           "min": 0.004272898249873785,
+           "max": 0.08706512451171874,
+           "avg": 0.006038227291304669,
+           "std": 0.003762160861248611,
+           "95_percentile": 0.00915905101832016
+       },
+       "Throughput": {
+           "max": 4151.0,
+           "95_percentile": 3385.53
+       },
+       "Total_duration_sec": 105.02257323265076,
+       "RPS": 9.436066642593987
     }
    ```
    Total_request_num: 처리된 요청의 총 수
@@ -150,11 +151,11 @@ source .venv/bin/activate
 
    TPOT (Time Per Output Token): 출력 토큰당 시간에 대한 통계
 
-   Throughput_token_per_sec: 초당 토큰 처리량
+   Throughput: 초당 토큰 처리량
 
    Total_duration_sec: 전체 테스트 시간
 
-   RPS: Response/s
+   RPS: Response/sec
    
 
    결과 파일은 각 테스트 세션의 성능을 평가하는 데 사용됩니다.
