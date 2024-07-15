@@ -14,18 +14,54 @@ async def sim_workload_in_single_thread(
     task_id: str = "",
     **kwargs: Dict[str, Any],
 ) -> List[VisitResponse]:
-    if not task_id:
-        task_id = str(uuid4())
-        logging.info(f"sim_workload_in_single_thread: task_id is not set, set to {task_id}")
-    
-    TIME_TOLERANCE = kwargs.get("time_tolerance", 0.1)
-    
+    """
+       Simulate a workload in a single thread.
+
+       This function processes a list of visits, each containing multiple requests,
+       and simulates their execution against a specified endpoint.
+
+       Args:
+           workload (List[Tuple[float, List[Any]]]): A list of tuples, each containing
+               a timestamp and a list of requests to be simulated.
+           endpoint_type (str): The type of endpoint to simulate against.
+           task_id (str, optional): A unique identifier for this simulation task.
+               If not provided, a UUID will be generated.
+           **kwargs: Additional keyword arguments to be passed to the simulation.
+
+       Returns:
+           List[VisitResponse]: A list of VisitResponse objects, each containing
+           the results of simulating a single visit.
+
+       Raises:
+           ValueError: If the workload is empty or invalid.
+           RuntimeError: If there's an error during the simulation process.
+
+       Note:
+           This function uses asyncio for concurrent processing of requests within
+           each visit, but processes visits sequentially.
+       """
+    task_id = task_id or str(uuid4())
     logging.info(f"<{task_id[:4]}>: start simulating.")
 
     tasks: List[Tuple[int, asyncio.Task]] = []
     responses: List[Tuple[int, VisitResponse]] = []
-
-    TIME_STEP = kwargs.pop("time_step", min(0.1, TIME_TOLERANCE))
+    
+    # TIME_TOLERANCE: Maximum allowed time difference between scheduled and actual execution time.
+    # - Smaller values increase timing accuracy but may cause more CPU usage.
+    # - Larger values decrease accuracy but are more forgiving on system resources.
+    # - Default is 0.05 seconds (50 milliseconds).
+    TIME_TOLERANCE = kwargs.get("time_tolerance", 0.05)
+    # TIME_STEP: Duration to sleep between each iteration of the main simulation loop.
+    # - Smaller values provide finer granularity but increase CPU usage.
+    # - Larger values are more CPU-friendly but may reduce simulation precision.
+    # - Setting to 0 removes sleep, potentially maximizing CPU usage.
+    # - Default is min(0.05, TIME_TOLERANCE) to balance precision and resource use.
+    TIME_STEP = kwargs.pop("time_step", min(0.01, TIME_TOLERANCE))
+    # CHECK_SIZE: Maximum number of tasks to check for completion in each iteration.
+    # - Smaller values may increase responsiveness to individual task completion.
+    # - Larger values may improve overall efficiency but could delay detection of completed tasks.
+    # - Should be tuned based on expected workload and system capabilities.
+    # - Default is 10, striking a balance between responsiveness and efficiency.
     CHECK_SIZE = kwargs.pop("check_size", 10)
     
     next_index = 0
@@ -90,39 +126,9 @@ async def sim_workload_in_single_thread(
             if next_index == total_visit_num:
                 break
 
-        if TIME_STEP != 0:
+        if TIME_STEP > 0:
             await asyncio.sleep(TIME_STEP)
 
-    # Sort responses
-    responses.sort(key=lambda x: x[0])
     mark_finish_for_task(task_id, time.time())
     
-    return [response[1] for response in responses]
-
-if __name__ == "__main__":
-    from ..workload_datasets.arena import ArenaDataset
-    from ..workload_datasets.oasst1 import Oasst1Dataset
-    from ..setup_logger import setup_logger
-    from rich import print as rprint
-
-    setup_logger(level=logging.DEBUG)
-
-    conf = {
-        "api_base": "http://3.14.115.113:8000/v1",
-        "api_key": "EMPTY",
-        "model": "vicuna-7b-v1.3",
-    }
-    # dataset = ArenaDataset()
-    dataset = Oasst1Dataset()
-    workloads = dataset.to_workload()[:100]
-    # offest = [0]+[w[0] for w in workloads]
-    # offests_delta = [offest[i+1]-offest[i] for i in range(len(offest)-1)]
-    # rprint(offests_delta)
-    responses = asyncio.run(
-        sim_workload_in_single_thread(workloads, None, skip_idle_min=0.5, **conf)
-    )
-
-    # rprint(sample_visit)
-    # rprint(responses)
-    result = [(w, r) for w, r in zip(workloads, responses)]
-    rprint(result, file=open("tmp_100.log", "w"))
+    return [response for _, response in sorted(responses, key=lambda x: x[0])]

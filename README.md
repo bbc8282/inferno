@@ -83,8 +83,6 @@ source .venv/bin/activate
                    "temperature": 0.9,
                    "top_p": 1,
                    "max_tokens": 512,
-                   "skip_idle_min": 20,
-                   "time_step": 0.01,
                    "request_timeout": 3600,
                    "hf_auth_key": "hf_1234567890qwertyuiop"
                }
