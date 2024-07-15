@@ -7,9 +7,6 @@ from .utils import prepare_inference_payload, handle_inference_response
 logger = logging.getLogger("tgi")
 logger.setLevel(logging.WARNING)
 
-def format_legacy_dialog(dialog: List[Dict[str, str]]) -> str:
-    return "\n".join([f"{message['role']}: {message['content']}" for message in dialog])
-
 async def streaming_inference(
     dialog: List[Dict[str, str]],
     **kwargs,

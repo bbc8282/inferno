@@ -8,9 +8,6 @@ from .utils import prepare_inference_payload, handle_inference_response
 logger = logging.getLogger("friendliai")
 logger.setLevel(logging.WARNING)
 
-def format_legacy_dialog(dialog: List[Dict[str, str]]) -> str:
-    return "\n".join([f"{message['role']}: {message['content']}" for message in dialog])
-
 async def streaming_inference(
     dialog: List[Dict[str, str]],
     **kwargs,
@@ -30,11 +27,6 @@ async def streaming_inference(
         }
         
         payload = prepare_inference_payload(dialog, kwargs.pop("model"), True, legacy, **kwargs)
-        
-        if legacy:
-            payload["prompt"] = format_legacy_dialog(dialog)
-        else:
-            payload["messages"] = dialog
             
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload, headers=headers) as response:
