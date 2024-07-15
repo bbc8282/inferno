@@ -54,7 +54,6 @@ def run_with_config(id: str, config: TestConfig):
             workload = dataset.to_workload(**config.dataset_config)
             workload = workload[config.workload_range[0] : config.workload_range[1]]
         run_config = {
-            "time_step": 0.01,
             "api_base": config.url,
             "api_key": config.key,
             "model": config.model,
@@ -70,7 +69,7 @@ def run_with_config(id: str, config: TestConfig):
         )
         raw_result = asyncio.run(
             sim_workload_in_single_thread(
-                workload, None, config.endpoint_type, id, **run_config
+                workload, config.endpoint_type, id, **run_config
             )
         )
         pickle.dump(

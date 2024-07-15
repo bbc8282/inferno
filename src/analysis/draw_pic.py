@@ -60,7 +60,7 @@ def Throughput(report: RequestLevelReport, path: str, **kwargs):
     data: List[Tuple[float, int]] = report.token_timestamp
     start = data[0][0]
     end = data[-1][0]
-    time_step = kwargs.get("time_step", 1)
+    time_step = kwargs.get("time_step", 0.05)
     window_size = kwargs.get("window_size", 5)
     x = np.arange(0, end - start, time_step)
     y = np.zeros(len(x))
