@@ -13,7 +13,6 @@ from .log_to_db import (
     log_new_pack,
 )
 
-
 async def sim_visit(
     visit: Visit, visit_index: int, task_id: str, endpoint_type: str, **kwargs
 ) -> VisitResponse:
@@ -87,6 +86,8 @@ async def process_request(sim_req, visit_start_time, scheduled_offset, ctx, task
     
     logging.debug(f"<{sim_req.id}>: start inference.")
     init_request(task_id, visit_index, sim_req.id, req_start_time, launch_latency)
+    
+    res_loggings: List[Tuple[float, ResPiece]] = []
     
     try:
         ret_str, res_loggings = await perform_inference(sim_req, dialog, inference_conf, task_id, visit_index, endpoint_type)

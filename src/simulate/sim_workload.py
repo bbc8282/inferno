@@ -56,7 +56,7 @@ async def sim_workload_in_single_thread(
     # - Larger values are more CPU-friendly but may reduce simulation precision.
     # - Setting to 0 removes sleep, potentially maximizing CPU usage.
     # - Default is min(0.05, TIME_TOLERANCE) to balance precision and resource use.
-    TIME_STEP = kwargs.pop("time_step", min(0.01, TIME_TOLERANCE))
+    TIME_STEP = kwargs.pop("time_step", min(0.05, TIME_TOLERANCE))
     # CHECK_SIZE: Maximum number of tasks to check for completion in each iteration.
     # - Smaller values may increase responsiveness to individual task completion.
     # - Larger values may improve overall efficiency but could delay detection of completed tasks.

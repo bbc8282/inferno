@@ -57,7 +57,7 @@ async def streaming_inference(
                                         stop=choice.get("finish_reason", None),
                                     )
                         except json.JSONDecodeError:
-                            print(f"Failed to parse JSON: {s}")
+                           logger.error(f"Failed to parse JSON: {s}")
     except Exception as e:
         yield e
 

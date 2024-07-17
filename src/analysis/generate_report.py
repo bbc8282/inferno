@@ -1,18 +1,35 @@
 from ..simulate.protocol import VisitResponse, ReqResponse
 from .report import VisitLevelReport, RequestLevelReport
+from transformers import AutoTokenizer
+from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from typing import List
 import numpy as np
 import bisect
+import logging
+
+logger = logging.getLogger("analysis")
 
 def load_tokenizer(tokenizer_name: str, hf_auth_key: str = None):
-    from transformers import AutoTokenizer
-    if hf_auth_key:
-        return AutoTokenizer.from_pretrained(tokenizer_name, token=hf_auth_key)
-    else:
-        return AutoTokenizer.from_pretrained(tokenizer_name)
+    try:
+        if "mistral" in tokenizer_name.lower():
+            tokenizer = MistralTokenizer.v1()
+            logging.info(f"Loaded Mistral tokenizer for {tokenizer_name}")
+        else:
+            if hf_auth_key:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, token=hf_auth_key)
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+            logging.info(f"Successfully loaded tokenizer: {tokenizer_name}")
+        return tokenizer
+    except Exception as e:
+        logging.error(f"Error loading tokenizer {tokenizer_name}: {str(e)}")
+        raise
 
 def count_tokens_from_str(s: str, tokenizer) -> int:
-    tokens = tokenizer(s, return_tensors="np")["input_ids"][0]
+    if isinstance(tokenizer, MistralTokenizer):
+        tokens = tokenizer.decode(s)
+    else:
+        tokens = tokenizer(s, return_tensors="np")["input_ids"][0]
     return len(tokens)
 
 def generate_request_level_report(
