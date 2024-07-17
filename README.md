@@ -51,19 +51,20 @@ source .venv/bin/activate
 
    프로젝트의 메인 API 서버를 실행합니다. 이 서버는 Config 등록 및 테스트 관리를 담당합니다.
    ```bash
-   python3 -m src.api_server.app
+   nohup python3 -m src.api_server.app &
    ```
-   이 명령은 `src/api_server/app.py` 파일을 실행합니다.
+   이 명령은 백그라운드에서 `src/api_server/app.py` 파일을 실행합니다.
 
 5. **Worker 실행**
 
    백그라운드에서 작업을 처리할 worker를 실행합니다.
    ```bash
-   python3 -m src.api_server.worker
+   nohup python3 -m src.api_server.worker &
    ```
-   이 명령은 `src/api_server/worker.py` 파일을 실행하여, 등록된 테스트 요청을 처리합니다.
+   이 명령은 백그라운드에서 `src/api_server/worker.py` 파일을 실행하여, 등록된 테스트 요청을 처리합니다.
 
    현재 여러개의 worker를 통한 병렬 작업 처리는 지원하지 않습니다.
+   하나의 worker만 실행하세요.
 
 6. **테스트 등록**
 
@@ -73,12 +74,11 @@ source .venv/bin/activate
         -H "Content-Type: application/json" \
         -d '{
                "url": "http://10.0.0.42:8000/v1",
-               "model": "mistralai/Mistral-7B-Instruct-v0.1",
+               "model": "mistralai/Mistral-7B-Instruct-v0.2",
                "dataset_name": "synthesizer",
                "endpoint_type": "vllm",
                "dataset_config": {
-                   "func": "lambda t: int(t / 0.1 + 1) if t < 60 else None",
-                   "random_seed": 1234,
+                   "func": "lambda t: int(t / 0.1 + 1) if t < 200 else None",
                    "prompt_source": "arena"
                },
                "kwargs": {
