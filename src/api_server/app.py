@@ -269,6 +269,8 @@ def trace_tps(id: str, model: str, sample_len: int = 5):
 
 if __name__ == "__main__":
     import uvicorn
+    
+    logging.info("Starting FastAPI server")
 
     uvicorn.run(
         app,

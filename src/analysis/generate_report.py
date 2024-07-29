@@ -13,16 +13,16 @@ def load_tokenizer(tokenizer_name: str, hf_auth_key: str = None):
     try:
         if "mistral" in tokenizer_name.lower():
             tokenizer = MistralTokenizer.v1()
-            logging.info(f"Loaded Mistral tokenizer for {tokenizer_name}")
+            logger.info(f"Loaded Mistral tokenizer for {tokenizer_name}")
         else:
             if hf_auth_key:
                 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, token=hf_auth_key)
             else:
                 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            logging.info(f"Successfully loaded tokenizer: {tokenizer_name}")
+            logger.info(f"Successfully loaded tokenizer: {tokenizer_name}")
         return tokenizer
     except Exception as e:
-        logging.error(f"Error loading tokenizer {tokenizer_name}: {str(e)}")
+        logger.error(f"Error loading tokenizer {tokenizer_name}: {str(e)}")
         raise
 
 def count_tokens_from_str(s: str, tokenizer) -> int:
@@ -39,6 +39,8 @@ def generate_request_level_report(
     
     success = [res for res in ress if res.error_info is None]
     assert len(success) > 0, "all requests failed, cannot generate report."
+    
+    logger.info(f"Total requests: {len(ress)}, Successful requests: {len(success)}")
     
     TTFT = [res.loggings[0][0] - res.start_timestamp for res in success if res.loggings]
     start_on_time = [res.launch_latency == 0.0 for res in success]
@@ -81,6 +83,7 @@ def generate_request_level_report(
     TPOT: List[float] = []
     
     if len(time_per_request) != len(token_per_request):
+        logger.error("Time per request and token per request lists are of different lengths.")
         raise ValueError("Time per request and token per request lists are of different lengths.")
     
     for ti, to in zip(time_per_request, token_per_request):
@@ -90,6 +93,7 @@ def generate_request_level_report(
             TPOT.append(ti / to)
     
     if not ress:
+        logger.error("The list of responses is empty.")
         raise ValueError("The list of responses is empty.")
     
     total_duration = max(res.end_timestamp for res in ress) - min(res.start_timestamp for res in ress)

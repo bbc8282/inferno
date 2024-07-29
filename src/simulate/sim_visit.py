@@ -45,6 +45,7 @@ async def sim_visit(
             responses.append(response)
             
             if response.error_info:
+                logging.error(f"<sim_visit {visit_index}:{sim_req.id}>: Request failed. Stopping visit simulation.")
                 break
         except Exception as e:
             logging.error(f"<sim_visit {visit_index}>: Unexpected error: {str(e)}")
