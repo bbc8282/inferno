@@ -1,13 +1,16 @@
 from typing import List, Tuple
 from .protocol import Workload, Visit, SimReq, OpenAIMessage
 from .utils import key_timestamp_to_offset, cache, compress_workload
+import logging
 
 
 class ArenaDataset:
-    def __init__(self):
+    def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
-
-        self.raw = load_dataset("lmsys/chatbot_arena_conversations")
+        try:
+            self.raw = load_dataset("lmsys/chatbot_arena_conversations", use_auth_token=hf_auth_key)
+        except Exception as e:
+            logging.error(f"Error loading dataset: {str(e)}")
 
     @cache()
     def to_workload(
@@ -91,7 +94,7 @@ if __name__ == "__main__":
     import time
 
     start_time = time.time()
-    ds = ArenaDataset()
+    ds = ArenaDataset("hf_auth_key")
     ds_workload = ds.to_workload()
     end_time = time.time()
     print(len(ds_workload))

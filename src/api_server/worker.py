@@ -36,10 +36,11 @@ def lambda_func_policy_check(f: str):
 
 def run_with_config(id: str, config: TestConfig):
     try:
+        hf_auth_key = config.kwargs.pop("hf_auth_key", None)
         if config.dataset_name == "synthesizer":
             source = dataset_dict[
                 config.dataset_config.pop("prompt_source")
-            ]().dialogs()
+            ](hf_auth_key=hf_auth_key).dialogs()
             dataset = dataset_dict[config.dataset_name](source)
             func = config.dataset_config.pop("func")
             lambda_func_policy_check(func)
@@ -50,7 +51,7 @@ def run_with_config(id: str, config: TestConfig):
                 **config.dataset_config,
             )
         else:
-            dataset = dataset_dict[config.dataset_name]()
+            dataset = dataset_dict[config.dataset_name](hf_auth_key=hf_auth_key)
             workload = dataset.to_workload(**config.dataset_config)
             workload = workload[config.workload_range[0] : config.workload_range[1]]
         run_config = {
@@ -80,7 +81,6 @@ def run_with_config(id: str, config: TestConfig):
             f.write(workload_hash)
         responses: List[ReqResponse] = sum([v.responses for v in raw_result], [])
         logging.info("start generate reports")
-        hf_auth_key = config.kwargs.pop("hf_auth_key", None)
         report = generate_request_level_report(responses, config.get_model_full_name(), hf_auth_key=hf_auth_key)
         pickle.dump(
             report,

@@ -1,11 +1,15 @@
 from typing import List, Tuple
 from .protocol import Workload, Visit, SimReq, OpenAIMessage
 from .utils import key_timestamp_to_offset, cache, compress_workload
+import logging
 
 class DollyDataset:
-    def __init__(self):
+    def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
-        self.raw = load_dataset("databricks/databricks-dolly-15k")
+        try:
+            self.raw = load_dataset("databricks/databricks-dolly-15k", use_auth_token=hf_auth_key)
+        except Exception as e:
+            logging.error(f"Error loading dataset: {str(e)}")
 
     @cache()
     def to_workload(self, separate_req_in_one_visit_with_interval=None, **kwargs) -> Workload:

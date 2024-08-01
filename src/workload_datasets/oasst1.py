@@ -2,14 +2,15 @@ from typing import List
 from .protocol import Workload, SimReq, OpenAIMessage
 from .utils import key_timestamp_to_offset, cache, compress_workload
 from datetime import datetime
+import logging
 
 
 class Oasst1Dataset:
     @cache()
-    def load(self):
+    def _load(self, hf_auth_key: str = None):
         from datasets import load_dataset
 
-        raw = load_dataset("OpenAssistant/oasst1")
+        raw = load_dataset("OpenAssistant/oasst1", use_auth_token=hf_auth_key)
         merged_raw = list(raw["train"]) + list(raw["validation"])
         dicted_data = {
             v["message_id"]: {
@@ -26,8 +27,11 @@ class Oasst1Dataset:
             ]
         return dicted_data, grouped_data
 
-    def __init__(self):
-        self.dicted_data, self.grouped_data = self.load()
+    def __init__(self, hf_auth_key: str = None):
+        try:
+            self.dicted_data, self.grouped_data = self._load(hf_auth_key)
+        except Exception as e:
+            logging.error(f"Error loading dataset: {str(e)}")
 
     @cache()
     def to_workload(self, separate_req_in_one_visit=False, **kwargs) -> Workload:
