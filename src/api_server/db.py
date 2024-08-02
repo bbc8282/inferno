@@ -98,6 +98,7 @@ def delete_test(id: str):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM test WHERE id=?", (id,))
+    cursor.execute("DELETE FROM error WHERE id=?", (id,))
     conn.commit()
 
 

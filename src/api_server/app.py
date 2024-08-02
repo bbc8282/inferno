@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, Header, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -8,7 +8,6 @@ import zipfile
 import glob
 import time
 import requests
-import re
 import math
 from urllib.parse import urlparse, urlunparse
 
@@ -109,13 +108,53 @@ def set_nickname_by_id(id: str, nickname: str):
 @app.get("/delete_test/{id}")
 def delete_test_by_id(id: str):
     delete_test(id)
-    return "OK"
+    
+    file_patterns = [
+        f"tmp/*_{id}.*",
+        f"tmp/{id}.zip",
+        f"tmp/workload_hash_{id}.txt"
+    ]
+    
+    deleted_files = []
+    for pattern in file_patterns:
+        files = glob.glob(pattern)
+        for file in files:
+            try:
+                os.remove(file)
+                deleted_files.append(file)
+            except OSError as e:
+                logging.error(f"Error deleting file {file}: {e}")
+    
+    if deleted_files:
+        logging.info(f"Deleted files associated with test {id}: {', '.join(deleted_files)}")
+    
+    return {"deleted_files": deleted_files, "message": f"Test {id} and associated files deleted successfully"}
+
 
 @app.get("/delete_all_tests")
 def delete_all_tests():
     ids = get_id_list()
     deleted_ids = []
     errors = []
+    deleted_files = []
+    
+    file_patterns = [
+        "tmp/*_*.png",
+        "tmp/*_*.json",
+        "tmp/*.zip",
+        "tmp/*_*.pkl",
+        "tmp/workload_hash_*.txt"
+    ]
+    
+    for pattern in file_patterns:
+        files = glob.glob(pattern)
+        for file in files:
+            try:
+                os.remove(file)
+                deleted_files.append(file)
+            except OSError as e:
+                logging.error(f"Error deleting file {file}: {e}")
+    
     for id_info in ids:
         test_id = id_info[0]
         try:
@@ -123,9 +162,21 @@ def delete_all_tests():
             deleted_ids.append(test_id)
         except Exception as e:
             errors.append((test_id, str(e)))
+    
+    if deleted_files:
+        logging.info(f"Deleted files: {', '.join(deleted_files)}")
+    
     if errors:
-        return {"deleted_ids": deleted_ids, "errors": errors}
-    return {"deleted_ids": deleted_ids, "message": "All tests deleted successfully."}
+        return {
+            "deleted_ids": deleted_ids, 
+            "errors": errors, 
+            "deleted_files": deleted_files
+        }
+    return {
+        "deleted_ids": deleted_ids, 
+        "message": "All tests and associated files deleted successfully.", 
+        "deleted_files": deleted_files
+    }
 
 
 @app.get("/test_model/{id}")
