@@ -54,11 +54,13 @@ def run_with_config(id: str, config: TestConfig):
             dataset = dataset_dict[config.dataset_name](hf_auth_key=hf_auth_key)
             workload = dataset.to_workload(**config.dataset_config)
             workload = workload[config.workload_range[0] : config.workload_range[1]]
+            
         run_config = {
             "api_base": config.url,
             "api_key": config.key,
             "model": config.model,
             "legacy": config.legacy,
+            "max_run_time": config.max_run_time,
             **config.kwargs,
         }
         

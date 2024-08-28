@@ -41,6 +41,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def verify_config(config: TestConfig) -> tuple[bool, str]:
+    """
+    Verify the TestConfig object before saving.
+    
+    Returns:
+    - Tuple[bool, str]: (is_valid, error_message)
+    """
+    if config.max_run_time is not None and config.max_run_time <= 0:
+        return False, "max_run_time must be positive"
+    
+    if not config.url:
+        return False, "URL must be provided"
+    
+    if not config.model:
+        return False, "Model must be specified"
+    
+    if config.endpoint_type not in ["tgi", "vllm", "friendliai"]:
+        return False, f"Unsupported endpoint type: {config.endpoint_type}"
+    
+    if config.dataset_name not in ["arena", "oasst1", "synthesizer", "dolly"]:
+        return False, f"Unsupported dataset name: {config.dataset_name}"
+    
+    # Add more validation checks as needed
+    
+    return True, ""
+
 def parse_prometheus_text(metrics_text: str):
     lines = metrics_text.strip().split("\n")
     metrics = {}
@@ -79,6 +105,9 @@ def worker_health_check(worker_id: str):
 
 @app.post("/register_test")
 def register(config: TestConfig):
+    is_valid, error_message = verify_config(config)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_message)
     return save_config(config)
 
 
@@ -94,6 +123,9 @@ def get_config(id: str):
 
 @app.post("/register_and_start_test")
 def register_and_start(config: TestConfig):
+    is_valid, error_message = verify_config(config)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_message)
     id = save_config(config)
     set_test_to_pending(id)
     return id

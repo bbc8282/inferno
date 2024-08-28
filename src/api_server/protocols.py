@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Tuple
+from typing import Tuple, Optional
 
 
 class TestConfig(BaseModel):
@@ -10,6 +10,7 @@ class TestConfig(BaseModel):
     key: str = "EMPTY"
     random_seed: int | None = None
     dataset_config: dict = {}
+    max_run_time: float = 600
     legacy: bool = False
     workload_range: Tuple[int | None, int | None] = (None, None)
     kwargs: dict = {}
@@ -24,6 +25,7 @@ class TestConfig(BaseModel):
                     "dataset_name": "synthesizer",
                     "endpoint_type": "vllm",
                     "legacy": False,
+                    "max_run_time": 60,
                     "dataset_config": {
                         "func": "lambda t: int(t / 0.1 + 1) if t < 20 else None",
                         "prompt_source": "arena"

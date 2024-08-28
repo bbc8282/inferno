@@ -69,10 +69,15 @@ async def sim_workload_in_single_thread(
     total_req_num = sum(len(v) for _, v in workload)
     finish_num = 0
     start_timestamp = time.time()
+    max_run_time = kwargs.pop("max_run_time")
     
     init_task(task_id, total_req_num, start_timestamp)
     
     while True:
+        if max_run_time and (time.time() - start_timestamp) >= max_run_time:
+            logging.info(f"<{task_id[:4]}>: Maximum run time {max_run_time}s reached. Stopping simulation.")
+            break
+        
         # Launch new tasks
         cur_offset = time.time() - start_timestamp
         logging.debug(f"current offset {cur_offset}")
@@ -128,6 +133,9 @@ async def sim_workload_in_single_thread(
 
         if TIME_STEP > 0:
             await asyncio.sleep(TIME_STEP)
+
+    for _, task in tasks:
+        task.cancel()
 
     mark_finish_for_task(task_id, time.time())
     
