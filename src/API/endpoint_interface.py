@@ -9,11 +9,10 @@ logger.setLevel(logging.WARNING)
 # Centralized endpoint to module mapping
 endpoint_to_module: Dict[str, str] = {
     "openai": ".openai",
-    "togetherai": ".togetherai",
-    "aws": ".aws",
     "vllm": ".vllm",
     "friendliai": ".friendliai",
     "tgi": ".tgi",
+    "triton": ".triton",
 }
 
 def get_streaming_inference(endpoint_type: str,) -> Callable:
