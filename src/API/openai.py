@@ -1,87 +1,70 @@
 import openai
-from typing import List, Dict, AsyncGenerator
+from typing import List, Dict
 from .api_protocol import ResPiece
 import logging
+from .utils import prepare_inference_payload, handle_inference_response
 
 logger = logging.getLogger("openai")
 logger.setLevel(logging.WARNING)
 
 async def streaming_inference(
     dialog: List[Dict[str, str]],
-    **kwargs
-) -> AsyncGenerator[ResPiece, None]:
+    **kwargs,
+):
     try:
-        api_key = kwargs.pop("api_key")
+        openai.api_key = kwargs.pop("api_key")
         model = kwargs.pop("model")
-        legacy = kwargs.pop("legacy", False)
-        openai.api_key = api_key
+        legacy = kwargs.pop('legacy', False)
+        kwargs.pop("stream", None)
+
+        payload = prepare_inference_payload(dialog, model, True, legacy, **kwargs)
 
         if legacy:
-            # Use Completion API for legacy mode
-            prompt = "\n".join([f"{m['role']}: {m['content']}" for m in dialog])
-            response = await openai.Completion.acreate(
-                model=model,
-                prompt=prompt,
-                stream=True,
-                **kwargs
-            )
-            async for chunk in response:
-                if chunk.choices[0].text:
-                    yield ResPiece(
-                        index=chunk.choices[0].index,
-                        role=None,
-                        content=chunk.choices[0].text,
-                        stop=chunk.choices[0].finish_reason
-                    )
+            async for chunk in await openai.Completion.acreate(**payload):
+                yield ResPiece(
+                    index=chunk.index,
+                    role=None,
+                    content=chunk.text,
+                    stop=chunk.finish_reason,
+                )
         else:
-            # Use Chat Completion API for non-legacy mode
-            response = await openai.ChatCompletion.acreate(
-                model=model,
-                messages=dialog,
-                stream=True,
-                **kwargs
-            )
-            async for chunk in response:
-                if chunk.choices[0].delta.content:
-                    yield ResPiece(
-                        index=chunk.choices[0].index,
-                        role=chunk.choices[0].delta.role,
-                        content=chunk.choices[0].delta.content,
-                        stop=chunk.choices[0].finish_reason
-                    )
+            async for chunk in await openai.ChatCompletion.acreate(**payload):
+                if "choices" in chunk:
+                    for choice in chunk.choices:
+                        yield ResPiece(
+                            index=choice.index,
+                            role=choice.delta.get("role"),
+                            content=choice.delta.get("content"),
+                            stop=choice.finish_reason,
+                        )
 
+    except openai.error.OpenAIError as e:
+        logger.error(f"OpenAI API error: {e}")
+        yield e
     except Exception as e:
-        logger.error(f"OpenAI API error: {str(e)}")
-        yield ResPiece(index=0, role=None, content=str(e), stop=None)
+        logger.error(f"Unexpected error: {e}")
+        yield e
 
 def inference(
     dialog: List[Dict[str, str]],
-    **kwargs
+    **kwargs,
 ) -> List[Dict[str, str]]:
-    api_key = kwargs.pop("api_key")
+    openai.api_key = kwargs.pop("api_key")
     model = kwargs.pop("model")
-    legacy = kwargs.pop("legacy", False)
-    openai.api_key = api_key
+    legacy = kwargs.pop('legacy', False)
+    kwargs.pop("stream", None)
+
+    payload = prepare_inference_payload(dialog, model, False, legacy, **kwargs)
 
     try:
         if legacy:
-            # Use Completion API for legacy mode
-            prompt = "\n".join([f"{m['role']}: {m['content']}" for m in dialog])
-            response = openai.Completion.create(
-                model=model,
-                prompt=prompt,
-                **kwargs
-            )
-            return [{"role": "assistant", "content": response.choices[0].text}]
+            completion = openai.Completion.create(**payload)
         else:
-            # Use Chat Completion API for non-legacy mode
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=dialog,
-                **kwargs
-            )
-            return [response.choices[0].message.to_dict()]
-
+            completion = openai.ChatCompletion.create(**payload)
+        return handle_inference_response(completion, legacy)
+    except openai.error.OpenAIError as e:
+        logger.error(f"OpenAI API error: {e}")
+        raise
     except Exception as e:
-        logger.error(f"OpenAI API error: {str(e)}")
+        logger.error(f"Unexpected error: {e}")
         raise
