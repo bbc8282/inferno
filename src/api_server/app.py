@@ -57,10 +57,10 @@ def verify_config(config: TestConfig) -> tuple[bool, str]:
     if not config.model:
         return False, "Model must be specified"
     
-    if config.endpoint_type not in ["tgi", "vllm", "friendliai"]:
+    if config.endpoint_type not in ["tgi", "vllm", "friendliai", "triton", "openai"]:
         return False, f"Unsupported endpoint type: {config.endpoint_type}"
     
-    if config.dataset_name not in ["arena", "oasst1", "synthesizer", "dolly"]:
+    if config.dataset_name not in ["arena", "oasst1", "synthesizer", "dolly", "convai2"]:
         return False, f"Unsupported dataset name: {config.dataset_name}"
     
     # Add more validation checks as needed
