@@ -12,14 +12,14 @@ from ..workload_datasets.arena import ArenaDataset
 from ..workload_datasets.oasst1 import Oasst1Dataset
 from ..workload_datasets.synthesizer import SynthesizerDataset
 from ..workload_datasets.dolly import DollyDataset
-from ..workload_datasets.convai2 import ConvAI2Dataset
+from ..workload_datasets.openorca import OpenOrcaDataset
 
 dataset_dict = {
     "arena": ArenaDataset,
     "oasst1": Oasst1Dataset,
     "synthesizer": SynthesizerDataset,
     "dolly": DollyDataset,
-    "convai2": ConvAI2Dataset,
+    "openorca": OpenOrcaDataset,
 }
 from ..simulate.sim_workload import sim_workload_in_single_thread
 from ..analysis.generate_report import generate_request_level_report
