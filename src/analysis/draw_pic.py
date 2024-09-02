@@ -15,11 +15,11 @@ def RequestsStatus(req_ress: List[ReqResponse], path: str):
     x = np.arange(0, end_timestamp - start_timestamp, interval)
     issued_delta = np.zeros(len(x))
     success_delta = np.zeros(len(x))
-    failed_delta = np.zeros(len(x))
+    fail_delta = np.zeros(len(x))
     for r in req_ress:
         issued_delta[int((r.start_timestamp - start_timestamp) / interval)] += 1
         if r.error_info is not None:
-            failed_delta[int((r.end_timestamp - start_timestamp) / interval)] += 1
+            fail_delta[int((r.end_timestamp - start_timestamp) / interval)] += 1
         else:
             success_delta[int((r.end_timestamp - start_timestamp) / interval)] += 1
 
@@ -34,11 +34,11 @@ def RequestsStatus(req_ress: List[ReqResponse], path: str):
 
     issued = sumup(issued_delta)
     success = sumup(success_delta)
-    failed = sumup(failed_delta)
+    fail = sumup(fail_delta)
     reqs = {
-        "failed": failed,
-        "success": success,
-        "processing": issued - success - failed,
+        "Fail": fail,
+        "Success": success,
+        "In progress": issued - success - fail,
     }
     _, ax = plt.subplots()
     ax.stackplot(
@@ -71,6 +71,7 @@ def Throughput(report: RequestLevelReport, path: str, **kwargs):
         ) - bisect.bisect_left(data, ty - window_size / 2, key=lambda x: x[0])
     y = y / window_size
     plt.plot(x, y)
+    plt.title("Tokens processed over time")
     plt.xlabel("time (s)")
     plt.ylabel("number of tokens")
     plt.savefig(path)
@@ -79,7 +80,7 @@ def Throughput(report: RequestLevelReport, path: str, **kwargs):
 if __name__ == "__main__":
     import pickle
 
-    name = "line_10s_70b_oct27"
+    name = "ecac3861-8c5e-40d7-8a18-e7c8ef24aa99"
     loaded: List[ReqResponse] = sum(
         [v.responses for v in pickle.load(open(f"tmp/responses_{name}.pkl", "rb"))],
         [],
