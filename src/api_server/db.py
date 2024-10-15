@@ -5,6 +5,7 @@ from uuid import uuid4
 from typing import List, Tuple
 import time
 import datetime
+import json
 
 db_path = "tmp/api_server.db"
 
@@ -80,15 +81,15 @@ def query_config(id: str) -> TestConfig:
     return TestConfig.model_validate_json(config[0])
 
 
-def save_config(config: TestConfig) -> str:
+def save_config(config: TestConfig, group_id: str = None) -> str:
     id = str(uuid4())
     model = config.model
     config_str = config.model_dump_json()
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO test VALUES (?, ?, ?, ?, ?, ?)",
-        (id, config_str, "init", model, str(int(time.time())), ""),
+        "INSERT INTO test VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (id, config_str, "init", model, str(int(time.time())), "", group_id),
     )
     conn.commit()
     return id

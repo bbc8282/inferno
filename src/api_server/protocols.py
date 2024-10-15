@@ -14,6 +14,7 @@ class TestConfig(BaseModel):
     legacy: bool = False
     workload_range: Tuple[int | None, int | None] = (None, None)
     kwargs: dict = {}
+    test_id: Optional[str] = None  # New field for custom test ID
 
     model_config = {
         "json_schema_extra": {
@@ -34,7 +35,8 @@ class TestConfig(BaseModel):
                         "temperature": 0.9,
                         "top_p": 1,
                         "max_tokens": 512
-                    }
+                    },
+                    "test_id": "custom_test_001"
                 }
             ]
         }
