@@ -26,6 +26,7 @@ from .db import (
     get_all_worker_ids,
 )
 from ..simulate.log_to_db import cur_requests_status_of_task, past_packs_of_task
+from ..workload_datasets.utils import AVAILABLE_DATASETS
 
 app = FastAPI()
 
@@ -229,6 +230,20 @@ def error_info(id: str):
 @app.get("/id_list")
 def id_list():
     return get_id_list()
+
+
+@app.get("/dataset_list")
+def dataset_list():
+    return {
+        "available_datasets": [
+            {
+                "id": dataset_id,
+                "name": dataset_info["name"],
+                "description": dataset_info["description"]
+            }
+            for dataset_id, dataset_info in AVAILABLE_DATASETS.items()
+        ]
+    }
 
 
 @app.get("/get/workload_hash/{id}")

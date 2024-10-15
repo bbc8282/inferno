@@ -3,6 +3,24 @@ from functools import wraps
 from .protocol import Visit, NotNoneOffset, Workload
 import logging
 
+AVAILABLE_DATASETS = {
+    "arena": {
+        "name": "Arena",
+        "description": "Chatbot Arena conversations dataset"
+    },
+    "oasst1": {
+        "name": "OpenAssistant",
+        "description": "OpenAssistant Conversations Dataset (OASST1)"
+    },
+    "dolly": {
+        "name": "Dolly",
+        "description": "Databricks' Dolly 15k dataset"
+    },
+    "openorca": {
+        "name": "OpenOrca",
+        "description": "OpenOrca dataset for instruction-following language models"
+    }
+}
 
 def key_timestamp_to_offset(
     x: List[Tuple[float, Any]]
