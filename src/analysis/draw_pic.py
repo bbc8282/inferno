@@ -2,10 +2,19 @@ from src.simulate.protocol import ReqResponse
 from src.analysis.report import RequestLevelReport
 from src.analysis.generate_report import generate_request_level_report
 from typing import List, Tuple
+from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
 import bisect
+import io
 
+def save_plot_as_webp(plt, path: str):
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    img = Image.open(buf)
+    img.save(path, 'WEBP')
+    buf.close()
 
 def RequestsStatus(req_ress: List[ReqResponse], path: str):
     plt.clf()
@@ -52,8 +61,8 @@ def RequestsStatus(req_ress: List[ReqResponse], path: str):
     ax.set_title("Request status over time")
     ax.set_xlabel("time (s)")
     ax.set_ylabel("number of requests")
-    plt.savefig(path)
-
+    #plt.savefig(path)
+    save_plot_as_webp(plt, path.replace('.png', '.webp'))
 
 def Throughput(report: RequestLevelReport, path: str, **kwargs):
     plt.clf()
@@ -74,7 +83,8 @@ def Throughput(report: RequestLevelReport, path: str, **kwargs):
     plt.title("Tokens processed over time")
     plt.xlabel("time (s)")
     plt.ylabel("number of tokens")
-    plt.savefig(path)
+    #plt.savefig(path)
+    save_plot_as_webp(plt, path.replace('.png', '.webp'))
 
 
 if __name__ == "__main__":
@@ -85,8 +95,8 @@ if __name__ == "__main__":
         [v.responses for v in pickle.load(open(f"tmp/responses_{name}.pkl", "rb"))],
         [],
     )
-    RequestsStatus(loaded, f"tmp/rs_{name}.png")
+    RequestsStatus(loaded, f"tmp/rs_{name}.webp")
     Throughput(
         generate_request_level_report(loaded, "meta-llama/Llama-2-7b-chat-hf"),
-        f"tmp/tp_{name}.png",
+        f"tmp/tp_{name}.webp",
     )
