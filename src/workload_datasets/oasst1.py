@@ -4,24 +4,21 @@ from .utils import key_timestamp_to_offset, cache, compress_workload, load_local
 from datetime import datetime
 import logging
 
-class Oasst1Dataset:
-    def __init__(self, hf_auth_key: str = None):
-        from datasets import load_dataset
-        try:
-            #self.raw = load_dataset("OpenAssistant/oasst1", use_auth_token=hf_auth_key)
-            self.raw_data = load_local_dataset('oasst1')
-            self.dicted_data, self.grouped_data = self._process_raw_data()
-        except Exception as e:
-            logging.error(f"Error loading dataset: {str(e)}")
 
+class Oasst1Dataset:
     @cache()
-    def _process_raw_data(self):
+    def _load(self, hf_auth_key: str = None):
+        from datasets import load_dataset
+
+        #raw = load_dataset("OpenAssistant/oasst1", use_auth_token=hf_auth_key)
+        raw = load_local_dataset('oasst1')
+        merged_raw = list(raw["train"]) + list(raw["validation"])
         dicted_data = {
             v["message_id"]: {
                 "timestamp": datetime.fromisoformat(v["created_date"]).timestamp(),
                 **v,
             }
-            for v in self.raw_data
+            for v in merged_raw
         }
         grouped_data = {}
         for v in dicted_data.values():
@@ -30,6 +27,12 @@ class Oasst1Dataset:
                 *grouped_data.get(v["message_tree_id"], []),
             ]
         return dicted_data, grouped_data
+
+    def __init__(self, hf_auth_key: str = None):
+        try:
+            self.dicted_data, self.grouped_data = self._load(hf_auth_key)
+        except Exception as e:
+            logging.error(f"Error loading dataset: {str(e)}")
 
     @cache()
     def to_workload(self, separate_req_in_one_visit=False, **kwargs) -> Workload:
@@ -77,6 +80,7 @@ class Oasst1Dataset:
         compression_ratio = kwargs.pop("compression_ratio", 1.0)
 
         if not separate_req_in_one_visit:
+
             def get_visit_start_time(group):
                 for v in group:
                     if v["parent_id"] == None:
@@ -119,6 +123,7 @@ class Oasst1Dataset:
     def dialogs(self) -> List[str]:
         return [v["text"] for v in self.dicted_data.values() if v["role"] == "prompter"]
 
+
 if __name__ == "__main__":
     from rich import print as rprint
     from .utils import assert_visit_is_legal
@@ -135,6 +140,7 @@ if __name__ == "__main__":
     print([ds_workload[i][0] for i in range(10)])
     print([ds_workload_compressed[i][0] for i in range(10)])
     print(len(ds_workload))
+    # rprint(ds.grouped_data['bebaaa50-9c9e-4fee-be15-1ff4d7efea8a'])
     rprint(ds_workload[1])
     for d in ds_workload:
         assert_visit_is_legal(d[1])
