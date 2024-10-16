@@ -8,12 +8,17 @@ import numpy as np
 import bisect
 import io
 
+# Set the default figure size to 1280x960 pixels
+plt.rcParams.update({'font.size': 16})
+plt.rcParams['figure.figsize'] = [16, 12]
+plt.rcParams['figure.dpi'] = 80  # Set DPI to 80 to match the pixel dimensions
+
 def save_plot_as_webp(plt, path: str):
     buf = io.BytesIO()
-    plt.savefig(buf, format='png')
+    plt.savefig(buf, format='png', dpi=120)  # Increased DPI for better quality
     buf.seek(0)
     img = Image.open(buf)
-    img.save(path, 'WEBP')
+    img.save(path, 'WEBP', quality=100)  # High quality WEBP
     buf.close()
 
 def RequestsStatus(req_ress: List[ReqResponse], path: str):
@@ -57,12 +62,15 @@ def RequestsStatus(req_ress: List[ReqResponse], path: str):
         alpha=0.95,
         colors=["#fc4f30", "#6d904f", "#008fd5"],
     )
-    ax.legend(loc="upper left", reverse=True)
-    ax.set_title("Request status over time")
-    ax.set_xlabel("time (s)")
-    ax.set_ylabel("number of requests")
-    #plt.savefig(path)
+    ax.legend(loc="upper left", reverse=True, fontsize=18)
+    ax.set_title("Request status over time", fontsize=26, fontweight='bold')
+    ax.set_xlabel("Time (s)", fontsize=20)
+    ax.set_ylabel("Number of requests", fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
     save_plot_as_webp(plt, path.replace('.png', '.webp'))
+    #plt.savefig(path)
 
 def Throughput(report: RequestLevelReport, path: str, **kwargs):
     plt.clf()
@@ -79,10 +87,13 @@ def Throughput(report: RequestLevelReport, path: str, **kwargs):
             data, ty + window_size / 2, key=lambda x: x[0]
         ) - bisect.bisect_left(data, ty - window_size / 2, key=lambda x: x[0])
     y = y / window_size
-    plt.plot(x, y)
-    plt.title("Tokens processed over time")
-    plt.xlabel("time (s)")
-    plt.ylabel("number of tokens")
+    plt.plot(x, y, linewidth=2)
+    plt.title("Tokens processed over time", fontsize=26, fontweight='bold')
+    plt.xlabel("Time (s)", fontsize=20)
+    plt.ylabel("Number of tokens", fontsize=20)
+    plt.tick_params(axis='both', which='major', labelsize=16)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
     #plt.savefig(path)
     save_plot_as_webp(plt, path.replace('.png', '.webp'))
 
@@ -90,13 +101,13 @@ def Throughput(report: RequestLevelReport, path: str, **kwargs):
 if __name__ == "__main__":
     import pickle
 
-    name = "ecac3861-8c5e-40d7-8a18-e7c8ef24aa99"
+    name = "test12"
     loaded: List[ReqResponse] = sum(
         [v.responses for v in pickle.load(open(f"tmp/responses_{name}.pkl", "rb"))],
         [],
     )
     RequestsStatus(loaded, f"tmp/rs_{name}.webp")
     Throughput(
-        generate_request_level_report(loaded, "meta-llama/Llama-2-7b-chat-hf"),
+        generate_request_level_report(loaded, "mistralai/Mistral-7B-Instruct-v0.2"),
         f"tmp/tp_{name}.webp",
     )
