@@ -11,13 +11,14 @@ import io
 # Set the default figure size to 1280x960 pixels
 plt.rcParams.update({'font.size': 16})
 plt.rcParams['figure.figsize'] = [16, 12]
-plt.rcParams['figure.dpi'] = 80  # Set DPI to 80 to match the pixel dimensions
+plt.rcParams['figure.dpi'] = 120
 
 def save_plot_as_webp(plt, path: str):
     buf = io.BytesIO()
     plt.savefig(buf, format='png', dpi=120)  # Increased DPI for better quality
     buf.seek(0)
     img = Image.open(buf)
+    img = img.resize((1280, 960), Image.LANCZOS)
     img.save(path, 'WEBP', quality=100)  # High quality WEBP
     buf.close()
 
