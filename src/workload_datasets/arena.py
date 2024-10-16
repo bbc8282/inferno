@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from .protocol import Workload, Visit, SimReq, OpenAIMessage
-from .utils import key_timestamp_to_offset, cache, compress_workload
+from .utils import key_timestamp_to_offset, cache, compress_workload, load_local_dataset
 import logging
 
 
@@ -8,7 +8,8 @@ class ArenaDataset:
     def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
         try:
-            self.raw = load_dataset("lmsys/chatbot_arena_conversations", use_auth_token=hf_auth_key)
+            #self.raw = load_dataset("lmsys/chatbot_arena_conversations", use_auth_token=hf_auth_key)
+            self.raw = load_local_dataset('arena')
         except Exception as e:
             logging.error(f"Error loading dataset: {str(e)}")
 
@@ -78,6 +79,7 @@ class ArenaDataset:
                 compression_ratio,
             )
 
+    @cache()
     def dialogs(self) -> List[str]:
         return sum(
             [

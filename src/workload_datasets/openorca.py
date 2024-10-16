@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from .protocol import Workload, Visit, SimReq, OpenAIMessage
-from .utils import key_timestamp_to_offset, cache, compress_workload
+from .utils import key_timestamp_to_offset, cache, compress_workload, load_local_dataset
 import logging
 import random
 
@@ -8,9 +8,8 @@ class OpenOrcaDataset:
     def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
         try:
-            self.raw = load_dataset("Open-Orca/OpenOrca", use_auth_token=hf_auth_key)
-            print("Dataset structure:")
-            print(self.raw["train"][0])
+            #self.raw = load_dataset("Open-Orca/OpenOrca", use_auth_token=hf_auth_key)
+            self.raw = load_local_dataset('openorca')
         except Exception as e:
             logging.error(f"Error loading dataset: {str(e)}")
 
@@ -82,5 +81,6 @@ class OpenOrcaDataset:
                 compression_ratio,
             )
 
+    @cache()
     def dialogs(self) -> List[str]:
         return [d['question'] for d in self.raw["train"]]

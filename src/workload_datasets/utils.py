@@ -99,6 +99,28 @@ def filter_workload_length(min_length: int = 0, max_length: int = float('inf')):
         return wrapper
     return decorator
 
+def load_local_dataset(dataset_name: str) -> Any:
+    """
+    Load a dataset from a local pickle file.
+    
+    Args:
+        dataset_name (str): Name of the dataset (e.g., 'arena', 'oasst1', 'dolly', 'openorca')
+    
+    Returns:
+        Any: The loaded dataset
+    
+    Raises:
+        FileNotFoundError: If the dataset file is not found
+    """
+    import pickle
+    import os
+    file_path = os.path.join('src', 'data', f'{dataset_name}_dataset.pkl')
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Dataset file not found: {file_path}")
+    
+    with open(file_path, 'rb') as f:
+        return pickle.load(f)
+
 
 if __name__ == "__main__":
     from rich import print as rprint
