@@ -10,7 +10,7 @@ import io
 
 # Set the default figure size to 1280x960 pixels
 plt.rcParams.update({'font.size': 16})
-plt.rcParams['figure.figsize'] = [16, 12]
+plt.rcParams['figure.figsize'] = [12, 9]
 plt.rcParams['figure.dpi'] = 120
 
 def save_plot_as_webp(plt, path: str):

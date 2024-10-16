@@ -163,7 +163,7 @@ cython_debug/
 src/secret.py
 
 # local data
-data/
+#data/
 
 # vscode settings
 .vscode/
