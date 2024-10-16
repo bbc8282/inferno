@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -10,6 +10,8 @@ import time
 import requests
 import math
 from urllib.parse import urlparse, urlunparse
+from typing import List, Dict
+from pydantic import BaseModel
 
 from .protocols import TestConfig
 from .db import (
@@ -24,6 +26,15 @@ from .db import (
     delete_test,
     get_last_heartbeat,
     get_all_worker_ids,
+    db_create_group,
+    db_add_tests_to_group,
+    db_get_all_groups,
+    db_remove_group,
+    db_remove_all_groups,
+    db_check_group_status,
+    db_get_group_test_results,
+    db_get_group_tests,
+    db_remove_test_from_group
 )
 from ..simulate.log_to_db import cur_requests_status_of_task, past_packs_of_task
 from ..workload_datasets.utils import AVAILABLE_DATASETS
@@ -41,6 +52,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class TestIdsModel(BaseModel):
+    test_ids: List[str]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "test_ids": ["test_001", "test_002", "test_003"]
+            }
+        }
 
 def verify_config(config: TestConfig) -> tuple[bool, str]:
     """
@@ -232,7 +253,7 @@ def id_list():
     return get_id_list()
 
 
-@app.get("/dataset_list")
+@app.get("/dataset_list", tags=['dataset'])
 def dataset_list():
     return {
         "available_datasets": [
@@ -244,7 +265,66 @@ def dataset_list():
             for dataset_id, dataset_info in AVAILABLE_DATASETS.items()
         ]
     }
+    
+@app.post("/group/create", tags=['group'])
+def create_group(group_id: str):
+    group = db_create_group(group_id)
+    return {"group_id": group}
 
+@app.post("/group/register/{group_id}", tags=['group'])
+def register_tests_to_group(
+    group_id: str, 
+    test_ids: TestIdsModel
+):
+    """
+    Register tests to a group.
+
+    - **group_id**: The ID of the group to register tests to
+    - **test_ids**: A list of test IDs to be added to the group
+    """
+    db_add_tests_to_group(group_id, test_ids.test_ids)
+    return {"message": f"Successfully added {len(test_ids.test_ids)} tests to group '{group_id}'"}
+
+@app.delete("/group/tests/{group_id}/{test_id}", tags=['group'])
+def remove_test_from_group(group_id: str, test_id: str):
+    success = db_remove_test_from_group(group_id, test_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Test '{test_id}' not found in group '{group_id}'")
+    return {"message": f"Test '{test_id}' removed from group '{group_id}'"}
+
+@app.get("/group/tests/{group_id}", tags=['group'])
+def get_group_tests(group_id: str):
+    tests = db_get_group_tests(group_id)
+    if not tests:
+        raise HTTPException(status_code=404, detail=f"No tests found for group '{group_id}'")
+    return {"tests": tests}
+
+@app.get("/group/list", tags=['group'])
+def get_all_groups():
+    groups = db_get_all_groups()
+    return {"groups": groups}
+
+@app.delete("/group/delete/{group_id}", tags=['group'])
+def delete_group(group_id: str):
+    db_remove_group(group_id)
+    return {"message": f"Group {group_id} deleted successfully"}
+
+@app.delete("/group/delete_all", tags=['group'])
+def delete_all_groups():
+    db_remove_all_groups()
+    return {"message": "All groups deleted successfully"}
+
+@app.get("/group/status/{group_id}", tags=['group'])
+def get_group_status(group_id: str):
+    status = db_check_group_status(group_id)
+    return {"status": status}
+
+@app.get("/group/results/{group_id}", tags=['group'])
+def get_group_test_results(group_id: str) -> Dict[str, List[Dict]]:
+    results = db_get_group_test_results(group_id)
+    if not results:
+        raise HTTPException(status_code=404, detail=f"No results found for group '{group_id}'")
+    return {"results": results}
 
 @app.get("/get/workload_hash/{id}")
 def get_workload_hash(id: str):
