@@ -61,6 +61,31 @@ async def recommend_servers(request: RecommendationRequest):
 
     logging.info(f"Found {len(group_results)} tests in the group")
 
+    valid_tests = []
+    for test in group_results:
+        test_id = test['id']
+        if not test['result']:
+            logging.warning(f"No result found for test: {test_id}")
+            continue
+        if not get_hardware_info_with_cost(test_id):
+            logging.warning(f"No hardware info found for test: {test_id}")
+            continue
+        valid_tests.append(test_id)
+
+    if not valid_tests:
+        logging.error("No valid tests found in the group")
+        raise HTTPException(status_code=404, detail="No valid tests found in the group")
+
+    if len(valid_tests) == 1:
+        single_test_id = valid_tests[0]
+        logging.info(f"Only one valid test found: {single_test_id}. Using it for all recommendations.")
+        return RecommendationResponse(
+            most_recommended=single_test_id,
+            resource_efficient=single_test_id,
+            performance_priority=single_test_id,
+            cost_efficient=single_test_id
+        )
+
     recommendations = {
         "most_recommended": None,
         "resource_efficient": None,
@@ -73,32 +98,22 @@ async def recommend_servers(request: RecommendationRequest):
     best_resource_efficiency = float('-inf')
     best_cost_efficiency = float('-inf')
 
-    valid_tests = []
-
     for test in group_results:
         test_id = test['id']
+        if test_id not in valid_tests:
+            continue
+
         config = test['config']
         result = test['result']
-        
-        logging.info(f"Processing test: {test_id}")
-        
-        if not result:
-            logging.warning(f"No result found for test: {test_id}")
-            continue
-
         hardware_info = get_hardware_info_with_cost(test_id)
-        if not hardware_info:
-            logging.warning(f"No hardware info found for test: {test_id}")
-            continue
-
+        
         try:
             actual_value = get_metric_value(result, request.performance_metric.metric)
         except KeyError as e:
             logging.warning(f"Missing metric {request.performance_metric.metric} for test {test_id}: {e}")
             continue
 
-        logging.info(f"Test {test_id} is valid. Metric value: {actual_value}")
-        valid_tests.append(test_id)
+        logging.info(f"Processing test: {test_id}. Metric value: {actual_value}")
 
         gpu_cost = hardware_info['gpu_cost']
         is_paid = is_paid_engine(config['endpoint_type'])
@@ -125,27 +140,17 @@ async def recommend_servers(request: RecommendationRequest):
             best_resource_efficiency = resource_efficiency
             recommendations["resource_efficient"] = test_id
 
-        # Cost efficiency (only for vllm and TGI)
+        # Cost efficiency (only for non-paid engines)
         if not is_paid:
             cost_efficiency = calculate_score(request.performance_metric.target, actual_value, gpu_cost, False, request.performance_metric.metric)
             if cost_efficiency > best_cost_efficiency:
                 best_cost_efficiency = cost_efficiency
                 recommendations["cost_efficient"] = test_id
 
-    if not valid_tests:
-        logging.error("No valid tests found in the group")
-        raise HTTPException(status_code=404, detail="No valid tests found in the group")
-
-    logging.info(f"Valid tests: {valid_tests}")
     logging.info(f"Recommendations: {recommendations}")
 
-    # If there's only one test, use it for all recommendations
-    if len(valid_tests) == 1:
-        single_test_id = valid_tests[0]
-        for key in recommendations:
-            recommendations[key] = single_test_id
-
     return RecommendationResponse(**recommendations)
+
 
 def get_metric_value(result: Dict, metric: str) -> float:
     try:
