@@ -35,6 +35,14 @@ router = APIRouter(prefix="/tests", tags=["tests"])
 
 @router.post("/register")
 def register(config: TestConfig):
+    """
+    Register a new test configuration.
+
+    - **config**: The test configuration details
+
+    Returns:
+    - The ID of the registered test
+    """
     is_valid, error_message = verify_config(config)
     if not is_valid:
         raise HTTPException(status_code=400, detail=error_message)
@@ -42,14 +50,48 @@ def register(config: TestConfig):
 
 @router.get("/start/{test_id}")
 def start_test(test_id: str):
+    """
+    Start a specific test.
+
+    - **test_id**: The ID of the test to start
+
+    Returns:
+    - A confirmation message
+
+    Example:
+    ```
+    GET /tests/start/test_001
+    ```
+    """
     return set_test_to_pending(test_id)
 
 @router.get("/config/{test_id}")
 def get_config(test_id: str):
+    """
+    Get the configuration of a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - The test configuration
+
+    Example:
+    ```
+    GET /tests/config/test_001
+    ```
+    """
     return query_config(test_id)
 
 @router.post("/register_and_start")
 def register_and_start(config: TestConfig):
+    """
+    Register a new test configuration and start the test immediately.
+
+    - **config**: The test configuration details
+
+    Returns:
+    - The ID of the registered and started test
+    """
     is_valid, error_message = verify_config(config)
     if not is_valid:
         raise HTTPException(status_code=400, detail=error_message)
@@ -59,11 +101,38 @@ def register_and_start(config: TestConfig):
 
 @router.get("/set_nickname/{test_id}")
 def set_nickname_by_id(test_id: str, nickname: str):
+    """
+    Set a nickname for a specific test.
+
+    - **test_id**: The ID of the test
+    - **nickname**: The nickname to set for the test
+
+    Returns:
+    - A confirmation message
+
+    Example:
+    ```
+    GET /tests/set_nickname/test_001?nickname=performance_test_1
+    ```
+    """
     set_nickname(test_id, nickname)
     return "OK"
 
 @router.get("/delete/{test_id}")
 def delete_test_by_test_id(test_id: str):
+    """
+    Delete a specific test and its associated files.
+
+    - **test_id**: The ID of the test to delete
+
+    Returns:
+    - A list of deleted files and a confirmation message
+
+    Example:
+    ```
+    GET /tests/delete/test_001
+    ```
+    """
     delete_test(test_id)
     
     file_patterns = [
@@ -89,6 +158,17 @@ def delete_test_by_test_id(test_id: str):
 
 @router.get("/delete_all")
 def delete_all_tests():
+    """
+    Delete all tests and their associated files.
+
+    Returns:
+    - A list of deleted test IDs, any errors encountered, and a list of deleted files
+
+    Example:
+    ```
+    GET /tests/delete_all
+    ```
+    """
     ids = get_id_list()
     deleted_ids = []
     errors = []
@@ -136,22 +216,85 @@ def delete_all_tests():
 
 @router.get("/model/{test_id}")
 def test_model(test_id: str):
+    """
+    Get the model information for a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - The model information
+
+    Example:
+    ```
+    GET /tests/model/test_001
+    ```
+    """
     return query_model(test_id)
 
 @router.get("/status/{test_id}")
 def test_status(test_id: str):
+    """
+    Get the status of a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - The current status of the test
+
+    Example:
+    ```
+    GET /tests/status/test_001
+    ```
+    """
     return query_test_status(test_id)
 
 @router.get("/error_info/{test_id}")
 def error_info(test_id: str):
+    """
+    Get error information for a specific test, if any.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - Error information, if any
+
+    Example:
+    ```
+    GET /tests/error_info/test_001
+    ```
+    """
     return query_error_info(test_id)
 
 @router.get("/id_list")
 def id_list():
+    """
+    Get a list of all test IDs.
+
+    Returns:
+    - A list of all test IDs
+
+    Example:
+    ```
+    GET /tests/id_list
+    ```
+    """
     return get_id_list()
 
 @router.get("/workload_hash/{test_id}")
 def get_workload_hash(test_id: str):
+    """
+    Get the workload hash for a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - The workload hash
+
+    Example:
+    ```
+    GET /tests/workload_hash/test_001
+    ```
+    """
     if not os.path.exists("tmp/workload_hash_" + test_id + ".txt"):
         raise HTTPException(status_code=404, detail="Workload hash not found")
     else:
@@ -160,6 +303,19 @@ def get_workload_hash(test_id: str):
 
 @router.get("/report/throughput/{test_id}")
 def report_throughput(test_id: str):
+    """
+    Get the throughput report for a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - A PNG image of the throughput report
+
+    Example:
+    ```
+    GET /tests/report/throughput/test_001
+    ```
+    """
     if not os.path.exists("tmp/tp_" + test_id + ".png"):
         raise HTTPException(status_code=404, detail="Report not found")
     else:
@@ -168,6 +324,19 @@ def report_throughput(test_id: str):
 
 @router.get("/report/requests_status/{test_id}")
 def report_requests_status(test_id: str):
+    """
+    Get the requests status report for a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - A PNG image of the requests status report
+
+    Example:
+    ```
+    GET /tests/report/requests_status/test_001
+    ```
+    """
     if not os.path.exists("tmp/rs_" + test_id + ".png"):
         raise HTTPException(status_code=404, detail="Report not found")
     else:
@@ -176,6 +345,19 @@ def report_requests_status(test_id: str):
 
 @router.get("/report/json/{test_id}")
 def report_json(test_id: str):
+    """
+    Get the JSON report for a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - A JSON file containing the test report
+
+    Example:
+    ```
+    GET /tests/report/json/test_001
+    ```
+    """
     if not os.path.exists("tmp/report_" + test_id + ".json"):
         raise HTTPException(status_code=404, detail="Report not found")
     else:
@@ -184,6 +366,19 @@ def report_json(test_id: str):
 
 @router.get("/report/download/{test_id}")
 def download_report(test_id: str):
+    """
+    Download all reports for a specific test as a zip file.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - A zip file containing all reports for the test
+
+    Example:
+    ```
+    GET /tests/report/download/test_001
+    ```
+    """
     file_paths = glob.glob("tmp/*_" + test_id + ".*")
     if len(file_paths) == 0:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -206,6 +401,21 @@ def add_test_hardware_info(test_id: str, hardware_info: HardwareInfo = Body(...,
 })):
     """
     Add hardware information for a specific test.
+
+    - **test_id**: The ID of the test
+    - **hardware_info**: The hardware information to add
+
+    Returns:
+    - A confirmation message
+
+    Example:
+    ```
+    POST /tests/hardware/test_001
+    {
+        "gpu_model": "A100",
+        "gpu_count": 4
+    }
+    ```
     """
     try:
         add_hardware_info(
@@ -221,6 +431,16 @@ def add_test_hardware_info(test_id: str, hardware_info: HardwareInfo = Body(...,
 def get_test_hardware_info(test_id: str):
     """
     Get hardware information and associated cost for a specific test.
+
+    - **test_id**: The ID of the test
+
+    Returns:
+    - Hardware information and associated cost
+
+    Example:
+    ```
+    GET /tests/hardware/test_001
+    ```
     """
     hardware_info = get_hardware_info_with_cost(test_id)
     if hardware_info is None:
@@ -229,6 +449,19 @@ def get_test_hardware_info(test_id: str):
 
 # Helper function (move this to a separate utility file if needed)
 def verify_config(config: TestConfig) -> tuple[bool, str]:
+    """
+    Verify the test configuration.
+
+    This function checks various aspects of the test configuration to ensure it's valid.
+
+    Parameters:
+    - config: TestConfig object containing the test configuration
+
+    Returns:
+    - A tuple (is_valid, error_message), where:
+        - is_valid: A boolean indicating whether the configuration is valid
+        - error_message: A string describing the error if the configuration is invalid, or an empty string if it's valid
+    """
     if config.max_run_time is not None and config.max_run_time <= 0:
         return False, "max_run_time must be positive"
     
