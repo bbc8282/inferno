@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 from .db import (
     db_create_group,
     db_add_tests_to_group,
@@ -15,7 +15,12 @@ from .db import (
 
 router = APIRouter(prefix="/group", tags=["group"])
 
-class TestIdsModel(BaseModel):
+class HardwareInfo(BaseModel):
+    gpu_model: str
+    gpu_count: int
+    gpu_cost: int
+
+class TestIds(BaseModel):
     test_ids: List[str]
 
     class Config:
@@ -24,6 +29,19 @@ class TestIdsModel(BaseModel):
                 "test_ids": ["test_001", "test_002", "test_003"]
             }
         }
+        
+class TestResult(BaseModel):
+    id: str
+    config: Dict
+    status: str
+    model: str
+    start_timestamp: str
+    nickname: str
+    result: Optional[Dict]
+    hardware_info: Optional[HardwareInfo]
+
+class GroupTestResults(BaseModel):
+    results: List[TestResult]
 
 @router.post("/create")
 def create_group(group_id: str = Body(..., example="performance_test_group")):
@@ -49,7 +67,7 @@ def create_group(group_id: str = Body(..., example="performance_test_group")):
 @router.post("/register/{group_id}")
 def register_tests_to_group(
     group_id: str, 
-    test_ids: TestIdsModel = Body(..., example={"test_ids": ["test_001", "test_002", "test_003"]})
+    test_ids: TestIds = Body(..., example={"test_ids": ["test_001", "test_002", "test_003"]})
 ):
     """
     Register tests to a group.
@@ -180,8 +198,8 @@ def get_group_status(group_id: str):
     status = db_check_group_status(group_id)
     return {"status": status}
 
-@router.get("/results/{group_id}")
-def get_group_test_results(group_id: str) -> Dict[str, List[Dict]]:
+@router.get("/results/{group_id}", response_model=GroupTestResults)
+def get_group_test_results(group_id: str):
     """
     Get the test results for a specific group.
 
@@ -198,4 +216,4 @@ def get_group_test_results(group_id: str) -> Dict[str, List[Dict]]:
     results = db_get_group_test_results(group_id)
     if not results:
         raise HTTPException(status_code=404, detail=f"No results found for group '{group_id}'")
-    return {"results": results}
+    return GroupTestResults(results=results)

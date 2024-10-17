@@ -3,15 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import datetime
 import time
-import requests
 import math
-from urllib.parse import urlparse, urlunparse
 
 from .test_routes import router as test_router
 from .group_routes import router as group_router
-from .protocols import TestConfig
+from .recommendation_routes import router as recommendation_router
 from .db import (
-    query_config,
     get_last_heartbeat,
     get_all_worker_ids,
 )
@@ -34,6 +31,7 @@ app.add_middleware(
 
 app.include_router(test_router)
 app.include_router(group_router)
+app.include_router(recommendation_router)
 
 def parse_prometheus_text(metrics_text: str):
     lines = metrics_text.strip().split("\n")
@@ -81,7 +79,7 @@ def dataset_list():
             for dataset_id, dataset_info in AVAILABLE_DATASETS.items()
         ]
     }
-
+"""
 @app.get("/get/vllm_metrics/{test_id}", tags=['vLLM'])
 def get_vllm_metrics(test_id: str):
     config = query_config(test_id)
@@ -120,6 +118,7 @@ def get_friendli_metrics(test_id: str, port: str):
             raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from friendliai server({config.url}): {str(e)}")
     else:
         raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a friendliai server.")
+"""
 
 @app.get("/trace/status/{test_id}", tags=['trace'])
 def trace_status(test_id: str):

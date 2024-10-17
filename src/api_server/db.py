@@ -6,6 +6,7 @@ from typing import List, Tuple, Dict, Optional
 import time
 import datetime
 import json
+import logging
 
 db_path = "tmp/api_server.db"
 
@@ -278,30 +279,6 @@ def db_check_group_status(group_id: str) -> str:
         return "finish"
     return "mixed"
 
-def db_get_group_test_results(group_id: str) -> List[Dict]:
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT t.id, t.status, t.config, r.content
-        FROM group_tests gt
-        JOIN test t ON gt.test_id = t.id
-        LEFT JOIN report r ON t.id = r.test_id
-        WHERE gt.group_id = ?
-    """, (group_id,))
-    
-    results = []
-    for row in cursor.fetchall():
-        test_id, status, config, report_content = row
-        result = {
-            "test_id": test_id,
-            "status": status,
-            "config": json.loads(config) if config else None,
-            "report": json.loads(report_content) if report_content else None
-        }
-        results.append(result)
-    
-    return results
-
 def db_get_group_tests(group_id: str) -> List[str]:
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -334,6 +311,7 @@ def db_get_group_test_results(group_id: str) -> List[Dict]:
     results = []
     for test in tests:
         test_id, config, status, model, start_timestamp, nickname = test
+        hardware_info = get_hardware_info_with_cost(test_id)
         result = {
             "id": test_id,
             "config": json.loads(config),
@@ -341,8 +319,10 @@ def db_get_group_test_results(group_id: str) -> List[Dict]:
             "model": model,
             "start_timestamp": start_timestamp,
             "nickname": nickname,
-            "result": read_test_result(test_id)
+            "result": read_test_result(test_id),
+            "hardware_info": hardware_info
         }
+        logging.debug(f"Test result for {test_id}: {result}")
         results.append(result)
 
     return results
