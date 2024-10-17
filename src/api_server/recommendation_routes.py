@@ -23,15 +23,35 @@ class RecommendationResponse(BaseModel):
 def calculate_score(target: float, actual: float, gpu_cost: int, is_paid_engine: bool, metric: str) -> float:
     if metric in ["ttft", "tpot", "latency"]:
         # For these metrics, lower is better
-        diff = abs(target - actual)
-        performance_score = max(0, 1 - (diff / target))
+        relative_diff = (actual - target) / target
+        if relative_diff <= 0:
+            # Exceeded target (actual is lower), higher score for being closer to target
+            performance_score = 1 + abs(relative_diff)
+        else:
+            # Did not meet target, lower score
+            performance_score = 1 / (1 + relative_diff)
     else:  # "rps", "throughput"
         # For these metrics, higher is better
-        performance_score = min(1, actual / target)
+        relative_diff = (actual - target) / target
+        if relative_diff >= 0:
+            # Exceeded target, higher score for being further above target
+            performance_score = 1 + relative_diff
+        else:
+            # Did not meet target, lower score
+            performance_score = 1 / (1 - relative_diff)
+
+    # Normalize performance_score to be between 0 and 1
+    performance_score = min(max(performance_score / 2, 0), 1)
 
     cost_score = 1 / (gpu_cost + 1)  # +1 to avoid division by zero
     engine_score = 0 if is_paid_engine else 0.2
-    return performance_score * 0.5 + cost_score * 0.3 + engine_score * 0.2
+    
+    # Weighted sum of scores
+    total_score = performance_score * 0.5 + cost_score * 0.3 + engine_score * 0.2
+    
+    logging.info(f"Scores - Performance: {performance_score:.2f}, Cost: {cost_score:.2f}, Engine: {engine_score:.2f}, Total: {total_score:.2f}")
+    
+    return total_score
 
 def is_paid_engine(endpoint_type: str) -> bool:
     return endpoint_type in ["openai", "friendliai"]  # Add other paid engines as needed
