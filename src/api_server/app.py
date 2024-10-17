@@ -1,40 +1,19 @@
-from fastapi import FastAPI, HTTPException, Body
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import os
 import logging
 import datetime
-import zipfile
-import glob
 import time
 import requests
 import math
 from urllib.parse import urlparse, urlunparse
-from typing import List, Dict
-from pydantic import BaseModel
 
+from .test_routes import router as test_router
+from .group_routes import router as group_router
 from .protocols import TestConfig
 from .db import (
-    save_config,
-    set_test_to_pending,
-    query_test_status,
-    query_error_info,
-    query_model,
     query_config,
-    get_id_list,
-    set_nickname,
-    delete_test,
     get_last_heartbeat,
     get_all_worker_ids,
-    db_create_group,
-    db_add_tests_to_group,
-    db_get_all_groups,
-    db_remove_group,
-    db_remove_all_groups,
-    db_check_group_status,
-    db_get_group_test_results,
-    db_get_group_tests,
-    db_remove_test_from_group
 )
 from ..simulate.log_to_db import cur_requests_status_of_task, past_packs_of_task
 from ..workload_datasets.utils import AVAILABLE_DATASETS
@@ -53,41 +32,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class TestIdsModel(BaseModel):
-    test_ids: List[str]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "test_ids": ["test_001", "test_002", "test_003"]
-            }
-        }
-
-def verify_config(config: TestConfig) -> tuple[bool, str]:
-    """
-    Verify the TestConfig object before saving.
-    
-    Returns:
-    - Tuple[bool, str]: (is_valid, error_message)
-    """
-    if config.max_run_time is not None and config.max_run_time <= 0:
-        return False, "max_run_time must be positive"
-    
-    if not config.url:
-        return False, "URL must be provided"
-    
-    if not config.model:
-        return False, "Model must be specified"
-    
-    if config.endpoint_type not in ["tgi", "vllm", "friendliai", "triton", "openai"]:
-        return False, f"Unsupported endpoint type: {config.endpoint_type}"
-    
-    if config.dataset_name not in ["arena", "oasst1", "synthesizer", "dolly", "openorca"]:
-        return False, f"Unsupported dataset name: {config.dataset_name}"
-    
-    # Add more validation checks as needed
-    
-    return True, ""
+app.include_router(test_router)
+app.include_router(group_router)
 
 def parse_prometheus_text(metrics_text: str):
     lines = metrics_text.strip().split("\n")
@@ -115,7 +61,6 @@ def list_workers():
     worker_ids = get_all_worker_ids()
     return {"workers": worker_ids}
 
-
 @app.get("/workers/{worker_id}", tags=['worker'])
 def worker_health_check(worker_id: str):
     last_heartbeat = get_last_heartbeat(worker_id=worker_id)
@@ -123,135 +68,6 @@ def worker_health_check(worker_id: str):
         return {"status": "healthy"}
     else:
         return {"status": "unresponsive"}
-
-
-@app.post("/register_test")
-def register(config: TestConfig):
-    is_valid, error_message = verify_config(config)
-    if not is_valid:
-        raise HTTPException(status_code=400, detail=error_message)
-    return save_config(config)
-
-
-@app.get("/start_test/{id}")
-def start_test(id: str):
-    return set_test_to_pending(id)
-
-
-@app.get("/config/{id}")
-def get_config(id: str):
-    return query_config(id)
-
-
-@app.post("/register_and_start_test")
-def register_and_start(config: TestConfig):
-    is_valid, error_message = verify_config(config)
-    if not is_valid:
-        raise HTTPException(status_code=400, detail=error_message)
-    id = save_config(config)
-    set_test_to_pending(id)
-    return id
-
-
-@app.get("/set_nickname/{id}")
-def set_nickname_by_id(id: str, nickname: str):
-    set_nickname(id, nickname)
-    return "OK"
-
-
-@app.get("/delete_test/{id}")
-def delete_test_by_id(id: str):
-    delete_test(id)
-    
-    file_patterns = [
-        f"tmp/*_{id}.*",
-        f"tmp/{id}.zip",
-        f"tmp/workload_hash_{id}.txt"
-    ]
-    
-    deleted_files = []
-    for pattern in file_patterns:
-        files = glob.glob(pattern)
-        for file in files:
-            try:
-                os.remove(file)
-                deleted_files.append(file)
-            except OSError as e:
-                logging.error(f"Error deleting file {file}: {e}")
-    
-    if deleted_files:
-        logging.info(f"Deleted files associated with test {id}: {', '.join(deleted_files)}")
-    
-    return {"deleted_files": deleted_files, "message": f"Test {id} and associated files deleted successfully"}
-
-
-@app.get("/delete_all_tests")
-def delete_all_tests():
-    ids = get_id_list()
-    deleted_ids = []
-    errors = []
-    deleted_files = []
-    
-    file_patterns = [
-        "tmp/*_*.png",
-        "tmp/*_*.json",
-        "tmp/*.zip",
-        "tmp/*_*.pkl",
-        "tmp/workload_hash_*.txt"
-    ]
-    
-    for pattern in file_patterns:
-        files = glob.glob(pattern)
-        for file in files:
-            try:
-                os.remove(file)
-                deleted_files.append(file)
-            except OSError as e:
-                logging.error(f"Error deleting file {file}: {e}")
-    
-    for id_info in ids:
-        test_id = id_info[0]
-        try:
-            delete_test(test_id)
-            deleted_ids.append(test_id)
-        except Exception as e:
-            errors.append((test_id, str(e)))
-    
-    if deleted_files:
-        logging.info(f"Deleted files: {', '.join(deleted_files)}")
-    
-    if errors:
-        return {
-            "deleted_ids": deleted_ids, 
-            "errors": errors, 
-            "deleted_files": deleted_files
-        }
-    return {
-        "deleted_ids": deleted_ids, 
-        "message": "All tests and associated files deleted successfully.", 
-        "deleted_files": deleted_files
-    }
-
-
-@app.get("/test_model/{id}")
-def test_model(id: str):
-    return query_model(id)
-
-
-@app.get("/test_status/{id}")
-def test_status(id: str):
-    return query_test_status(id)
-
-
-@app.get("/error_info/{id}")
-def error_info(id: str):
-    return query_error_info(id)
-
-
-@app.get("/id_list")
-def id_list():
-    return get_id_list()
-
 
 @app.get("/dataset_list", tags=['dataset'])
 def dataset_list():
@@ -265,78 +81,10 @@ def dataset_list():
             for dataset_id, dataset_info in AVAILABLE_DATASETS.items()
         ]
     }
-    
-@app.post("/group/create", tags=['group'])
-def create_group(group_id: str):
-    group = db_create_group(group_id)
-    return {"group_id": group}
 
-@app.post("/group/register/{group_id}", tags=['group'])
-def register_tests_to_group(
-    group_id: str, 
-    test_ids: TestIdsModel
-):
-    """
-    Register tests to a group.
-
-    - **group_id**: The ID of the group to register tests to
-    - **test_ids**: A list of test IDs to be added to the group
-    """
-    db_add_tests_to_group(group_id, test_ids.test_ids)
-    return {"message": f"Successfully added {len(test_ids.test_ids)} tests to group '{group_id}'"}
-
-@app.delete("/group/tests/{group_id}/{test_id}", tags=['group'])
-def remove_test_from_group(group_id: str, test_id: str):
-    success = db_remove_test_from_group(group_id, test_id)
-    if not success:
-        raise HTTPException(status_code=404, detail=f"Test '{test_id}' not found in group '{group_id}'")
-    return {"message": f"Test '{test_id}' removed from group '{group_id}'"}
-
-@app.get("/group/tests/{group_id}", tags=['group'])
-def get_group_tests(group_id: str):
-    tests = db_get_group_tests(group_id)
-    if not tests:
-        raise HTTPException(status_code=404, detail=f"No tests found for group '{group_id}'")
-    return {"tests": tests}
-
-@app.get("/group/list", tags=['group'])
-def get_all_groups():
-    groups = db_get_all_groups()
-    return {"groups": groups}
-
-@app.delete("/group/delete/{group_id}", tags=['group'])
-def delete_group(group_id: str):
-    db_remove_group(group_id)
-    return {"message": f"Group {group_id} deleted successfully"}
-
-@app.delete("/group/delete_all", tags=['group'])
-def delete_all_groups():
-    db_remove_all_groups()
-    return {"message": "All groups deleted successfully"}
-
-@app.get("/group/status/{group_id}", tags=['group'])
-def get_group_status(group_id: str):
-    status = db_check_group_status(group_id)
-    return {"status": status}
-
-@app.get("/group/results/{group_id}", tags=['group'])
-def get_group_test_results(group_id: str) -> Dict[str, List[Dict]]:
-    results = db_get_group_test_results(group_id)
-    if not results:
-        raise HTTPException(status_code=404, detail=f"No results found for group '{group_id}'")
-    return {"results": results}
-
-@app.get("/get/workload_hash/{id}")
-def get_workload_hash(id: str):
-    if not os.path.exists("tmp/workload_hash_" + id + ".txt"):
-        raise HTTPException(status_code=404, detail="Workload hash not found")
-    else:
-        with open("tmp/workload_hash_" + id + ".txt", mode="r") as f:
-            return f.read()
-        
-@app.get("/get/vllm_metrics/{id}", tags=['vLLM'])
-def get_vllm_metrics(id: str):
-    config = get_config(id)
+@app.get("/get/vllm_metrics/{test_id}", tags=['vLLM'])
+def get_vllm_metrics(test_id: str):
+    config = query_config(test_id)
     if config.endpoint_type == "vllm":
         try:
             parsed_url = urlparse(config.url)
@@ -351,12 +99,11 @@ def get_vllm_metrics(id: str):
         except requests.RequestException as e:
             raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from vllm server({metrics_url}): {str(e)}")
     else:
-        raise HTTPException(status_code=400, detail=f"The specified server({metrics_url}) is not a vllm server.")
+        raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a vllm server.")
 
-
-@app.get("/get/frienfli_metrics/{id}", tags=['FriendliAI'])
-def get_friendli_metrics(id: str, port: str):
-    config = get_config(id)
+@app.get("/get/friendli_metrics/{test_id}", tags=['FriendliAI'])
+def get_friendli_metrics(test_id: str, port: str):
+    config = query_config(test_id)
     if config.endpoint_type == "friendliai":
         try:
             parsed_url = urlparse(config.url)
@@ -374,60 +121,13 @@ def get_friendli_metrics(id: str, port: str):
     else:
         raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a friendliai server.")
 
+@app.get("/trace/status/{test_id}", tags=['trace'])
+def trace_status(test_id: str):
+    return cur_requests_status_of_task(test_id)
 
-@app.get("/report/throughput/{id}", tags=['report'])
-def report_throughput(id: str):
-    if not os.path.exists("tmp/tp_" + id + ".png"):
-        raise HTTPException(status_code=404, detail="Report not found")
-    else:
-        file_like = open("tmp/tp_" + id + ".png", mode="rb")
-        return StreamingResponse(file_like, media_type="image/png")
-
-
-@app.get("/report/requests_status/{id}", tags=['report'])
-def report_requests_status(id: str):
-    if not os.path.exists("tmp/rs_" + id + ".png"):
-        raise HTTPException(status_code=404, detail="Report not found")
-    else:
-        file_like = open("tmp/rs_" + id + ".png", mode="rb")
-        return StreamingResponse(file_like, media_type="image/png")
-
-
-@app.get("/report/json/{id}", tags=['report'])
-def report_json(id: str):
-    if not os.path.exists("tmp/report_" + id + ".json"):
-        raise HTTPException(status_code=404, detail="Report not found")
-    else:
-        file_like = open("tmp/report_" + id + ".json", mode="r")
-        return StreamingResponse(file_like, media_type="application/json")
-
-
-@app.get("/report/download/{id}", tags=['report'])
-def download_report(id: str):
-    file_paths = glob.glob("tmp/*_" + id + ".*")
-    if len(file_paths) == 0:
-        raise HTTPException(status_code=404, detail="Report not found")
-    else:
-        zip_filename = f"tmp/{id}.zip"
-        with zipfile.ZipFile(zip_filename, "w") as zipf:
-            for file in file_paths:
-                zipf.write(file, arcname=os.path.basename(file))
-        file_like = open(zip_filename, mode="rb")
-        return StreamingResponse(
-            file_like,
-            media_type="application/zip",
-            headers={"Content-Disposition": f'attachment; filename="{id}.zip"'},
-        )
-
-
-@app.get("/trace/status/{id}", tags=['trace'])
-def trace_status(id: str):
-    return cur_requests_status_of_task(id)
-
-
-@app.get("/trace/tps/{id}", tags=['trace'])
-def trace_tps(id: str, model: str, sample_len: int = 5):
-    packs = past_packs_of_task(id, past_time=sample_len)
+@app.get("/trace/tps/{test_id}", tags=['trace'])
+def trace_tps(test_id: str, model: str, sample_len: int = 5):
+    packs = past_packs_of_task(test_id, past_time=sample_len)
     from ..analysis.generate_report import count_tokens_from_str, load_tokenizer
 
     try:
@@ -438,7 +138,7 @@ def trace_tps(id: str, model: str, sample_len: int = 5):
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
     except Exception as e:
-        logging.warning(f"<trace_tps {id}>: tps failed: {str(e)}")
+        logging.warning(f"<trace_tps {test_id}>: tps failed: {str(e)}")
         return {
             "tps": 0,
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
