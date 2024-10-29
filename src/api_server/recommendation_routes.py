@@ -92,6 +92,20 @@ def get_test_result(test_id: str, group_results: List[Dict]) -> TestResult:
                 hardware_info=hardware_info
             )
     raise ValueError(f"Test result not found for test_id: {test_id}")
+
+def is_test_valid(test: Dict, metric: str) -> bool:
+    if not test['result'] or test['status'] == 'error':
+        return False
+
+    if not get_hardware_info_with_cost(test['id']):
+        return False
+
+    try:
+        get_metric_value(test['result'], metric)
+    except (KeyError, ValueError):
+        return False
+        
+    return True
     
 @router.post("/recommend", response_model=RecommendationResponse)
 async def recommend_servers(request: RecommendationRequest):
@@ -206,23 +220,35 @@ async def detailed_recommend_servers(request: RecommendationRequest):
     logging.info(f"Found {len(group_results)} tests in the group")
 
     valid_tests = []
+    failed_tests = []
     for test in group_results:
         test_id = test['id']
-        if not test['result']:
-            logging.warning(f"No result found for test: {test_id}")
+        if test['status'] == 'error':
+            failed_tests.append(test_id)
+            logging.warning(f"Test {test_id} failed with status: error")
             continue
-        if not get_hardware_info_with_cost(test_id):
-            logging.warning(f"No hardware info found for test: {test_id}")
+            
+        if not is_test_valid(test, request.performance_metric.metric):
+            if test['status'] != 'error':  # 이미 에러로 기록된 테스트는 제외
+                failed_tests.append(test_id)
+            logging.warning(f"Test {test_id} is invalid: missing required data")
             continue
+            
         valid_tests.append(test_id)
 
     if not valid_tests:
-        logging.error("No valid tests found in the group")
-        raise HTTPException(status_code=404, detail="No valid tests found in the group")
+        error_message = "No valid tests found in the group"
+        if failed_tests:
+            error_message += f". Failed tests: {', '.join(failed_tests)}"
+        logging.error(error_message)
+        raise HTTPException(status_code=404, detail=error_message)
 
     if len(valid_tests) == 1:
         single_test_id = valid_tests[0]
-        logging.info(f"Only one valid test found: {single_test_id}. Using it for all recommendations.")
+        message = f"Only one valid test found: {single_test_id}"
+        if failed_tests:
+            message += f". Failed tests: {', '.join(failed_tests)}"
+        logging.info(message)
         single_test_result = get_test_result(single_test_id, group_results)
         return DetailedRecommendationResponse(
             most_recommended=single_test_result,
@@ -293,6 +319,7 @@ async def detailed_recommend_servers(request: RecommendationRequest):
                 recommendations["cost_efficient"] = test_id
 
     logging.info(f"Recommendations: {recommendations}")
+    logging.info(f"Failed tests: {', '.join(failed_tests) if failed_tests else 'None'}")
 
    # Convert recommendations to TestResult objects
     detailed_recommendations = {}
