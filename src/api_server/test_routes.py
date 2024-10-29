@@ -309,18 +309,19 @@ def report_throughput(test_id: str):
     - **test_id**: The ID of the test
 
     Returns:
-    - A PNG image of the throughput report
+    - A WebP image of the throughput report
 
     Example:
     ```
     GET /tests/report/throughput/test_001
     ```
     """
-    if not os.path.exists("tmp/tp_" + test_id + ".png"):
+    webp_path = f"tmp/tp_{test_id}.webp"
+    if not os.path.exists(webp_path):
         raise HTTPException(status_code=404, detail="Report not found")
     else:
-        file_like = open("tmp/tp_" + test_id + ".png", mode="rb")
-        return StreamingResponse(file_like, media_type="image/png")
+        file_like = open(webp_path, mode="rb")
+        return StreamingResponse(file_like, media_type="image/webp")
 
 @router.get("/report/requests_status/{test_id}")
 def report_requests_status(test_id: str):
@@ -330,18 +331,19 @@ def report_requests_status(test_id: str):
     - **test_id**: The ID of the test
 
     Returns:
-    - A PNG image of the requests status report
+    - A WebP image of the requests status report
 
     Example:
     ```
     GET /tests/report/requests_status/test_001
     ```
     """
-    if not os.path.exists("tmp/rs_" + test_id + ".png"):
+    webp_path = f"tmp/rs_{test_id}.webp"
+    if not os.path.exists(webp_path):
         raise HTTPException(status_code=404, detail="Report not found")
     else:
-        file_like = open("tmp/rs_" + test_id + ".png", mode="rb")
-        return StreamingResponse(file_like, media_type="image/png")
+        file_like = open(webp_path, mode="rb")
+        return StreamingResponse(file_like, media_type="image/webp")
 
 @router.get("/report/json/{test_id}")
 def report_json(test_id: str):
