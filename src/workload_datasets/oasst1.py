@@ -10,7 +10,7 @@ class Oasst1Dataset:
     def _load(self, hf_auth_key: str = None):
         from datasets import load_dataset
 
-        #raw = load_dataset("OpenAssistant/oasst1", use_auth_token=hf_auth_key)
+        # raw = load_dataset("OpenAssistant/oasst1", use_auth_token=hf_auth_key)
         raw = load_local_dataset('oasst1')
         merged_raw = list(raw["train"]) + list(raw["validation"])
         dicted_data = {

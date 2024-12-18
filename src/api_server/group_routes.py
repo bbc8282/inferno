@@ -44,7 +44,7 @@ class GroupTestResults(BaseModel):
     results: List[TestResult]
 
 @router.post("/create")
-def create_group(group_id: str = Body(..., example="performance_test_group")):
+def create_group(group_id: str = Body(..., embed=True)):
     """
     Create a new group with the given group_id.
 
@@ -61,8 +61,11 @@ def create_group(group_id: str = Body(..., example="performance_test_group")):
     }
     ```
     """
-    group = db_create_group(group_id)
-    return {"group_id": group}
+    try:
+        group = db_create_group(group_id)
+        return {"group_id": group}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/register/{group_id}")
 def register_tests_to_group(
@@ -86,8 +89,13 @@ def register_tests_to_group(
     }
     ```
     """
-    db_add_tests_to_group(group_id, test_ids.test_ids)
-    return {"message": f"Successfully added {len(test_ids.test_ids)} tests to group '{group_id}'"}
+    try:
+        db_add_tests_to_group(group_id, test_ids.test_ids)
+        return {"message": f"Successfully added {len(test_ids.test_ids)} tests to group '{group_id}'"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add tests to group: {str(e)}")
 
 @router.delete("/tests/{group_id}/{test_id}")
 def remove_test_from_group(group_id: str, test_id: str):
@@ -161,8 +169,14 @@ def delete_group(group_id: str):
     DELETE /group/delete/performance_test_group
     ```
     """
-    db_remove_group(group_id)
-    return {"message": f"Group {group_id} deleted successfully"}
+    try:
+        db_remove_group(group_id)
+        return {"message": f"Group {group_id} deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=f"Group '{group_id}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete group: {str(e)}")
+
 
 @router.delete("/delete_all")
 def delete_all_groups():
@@ -177,8 +191,11 @@ def delete_all_groups():
     DELETE /group/delete_all
     ```
     """
-    db_remove_all_groups()
-    return {"message": "All groups deleted successfully"}
+    try:
+        db_remove_all_groups()
+        return {"message": "All groups deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete all groups: {str(e)}")
 
 @router.get("/status/{group_id}")
 def get_group_status(group_id: str):
