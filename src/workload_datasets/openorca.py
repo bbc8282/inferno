@@ -8,8 +8,8 @@ class OpenOrcaDataset:
     def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
         try:
-            # self.raw = load_dataset("Open-Orca/OpenOrca", use_auth_token=hf_auth_key)
-            self.raw = load_local_dataset('openorca')
+            self.raw = load_dataset("Open-Orca/OpenOrca", use_auth_token=hf_auth_key)
+            # self.raw = load_local_dataset('openorca')
         except Exception as e:
             logging.error(f"Error loading dataset: {str(e)}")
 

@@ -7,8 +7,8 @@ class DollyDataset:
     def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
         try:
-            # self.raw = load_dataset("databricks/databricks-dolly-15k", use_auth_token=hf_auth_key)
-            self.raw = load_local_dataset('dolly')
+            self.raw = load_dataset("databricks/databricks-dolly-15k", use_auth_token=hf_auth_key)
+            # self.raw = load_local_dataset('dolly')
         except Exception as e:
             logging.error(f"Error loading dataset: {str(e)}")
 

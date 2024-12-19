@@ -270,7 +270,7 @@ def db_check_group_status(group_id: str) -> str:
     statuses = [row[0] for row in cursor.fetchall()]
     
     if not statuses:
-        return "empty"
+        return "pending"
     if all(status == "init" for status in statuses):
         return "init"
     if any(status == "running" for status in statuses):

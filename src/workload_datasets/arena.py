@@ -8,8 +8,8 @@ class ArenaDataset:
     def __init__(self, hf_auth_key: str = None):
         from datasets import load_dataset
         try:
-            # self.raw = load_dataset("lmsys/chatbot_arena_conversations", use_auth_token=hf_auth_key)
-            self.raw = load_local_dataset('arena')
+            self.raw = load_dataset("lmsys/chatbot_arena_conversations", use_auth_token=hf_auth_key)
+            # self.raw = load_local_dataset('arena')
         except Exception as e:
             logging.error(f"Error loading dataset: {str(e)}")
 
