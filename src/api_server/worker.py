@@ -39,7 +39,7 @@ def lambda_func_policy_check(f: str):
 def run_with_config(id: str, config: TestConfig):
     try:
         hf_auth_key = config.kwargs.pop("hf_auth_key", None)
-        tokenizer = config.pop("tokenizer", config.model)
+        tokenizer = config.tokenizer if config.tokenizer else config.model
         if config.dataset_name == "synthesizer":
             source = dataset_dict[
                 config.dataset_config.pop("prompt_source")
@@ -53,7 +53,6 @@ def run_with_config(id: str, config: TestConfig):
                 random_seed=config.random_seed,
                 **config.dataset_config,
             )
-            workload = workload[config.workload_range[0] : config.workload_range[1]]
         else:
             dataset = dataset_dict[config.dataset_name](hf_auth_key=hf_auth_key)
             workload = dataset.to_workload(**config.dataset_config)
