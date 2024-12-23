@@ -5,6 +5,7 @@ from typing import Tuple, Optional, List, Dict
 class TestConfig(BaseModel):
     url: str
     model: str
+    tokenizer: Optional[str] = None
     dataset_name: str
     endpoint_type: str
     key: str = "EMPTY"
@@ -14,7 +15,7 @@ class TestConfig(BaseModel):
     legacy: bool = False
     workload_range: Tuple[int | None, int | None] = (None, None)
     kwargs: dict = {}
-    test_id: Optional[str] = None  # New field for custom test ID
+    test_id: Optional[str] = None
 
     model_config = {
         "json_schema_extra": {
@@ -22,6 +23,7 @@ class TestConfig(BaseModel):
                 {
                     "url": "http://209.20.156.226:8000/v1",
                     "model": "facebook/opt-125m",
+                    "tokenizer": "facebook/opt-125m",
                     "key": "EMPTY",
                     "dataset_name": "synthesizer",
                     "endpoint_type": "vllm",
@@ -41,10 +43,3 @@ class TestConfig(BaseModel):
             ]
         }
     }
-    
-
-    def get_model_name(self):
-        return self.model.split("/")[-1]
-    
-    def get_model_full_name(self):
-        return self.model
