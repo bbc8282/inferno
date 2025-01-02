@@ -8,6 +8,29 @@ from .utils import prepare_inference_payload, handle_inference_response
 logger = logging.getLogger("friendliai")
 logger.setLevel(logging.WARNING)
 
+def build_api_url(api_base: str, legacy: bool = False) -> str:
+    """
+    Build the API URL with proper formatting.
+    
+    Args:
+        api_base (str): Base API URL
+        legacy (bool): Whether to use legacy completions endpoint
+    
+    Returns:
+        str: Properly formatted API URL
+    """
+    # Add http:// if no protocol specified
+    if not api_base.startswith(('http://', 'https://')):
+        api_base = f'http://{api_base}'
+    
+    # Remove trailing slash if present
+    api_base = api_base.rstrip('/')
+    
+    # Add appropriate endpoint
+    endpoint = '/completions' if legacy else '/chat/completions'
+    
+    return f"{api_base}{endpoint}"
+
 async def streaming_inference(
     dialog: List[Dict[str, str]],
     **kwargs,
@@ -18,8 +41,8 @@ async def streaming_inference(
         api_key = kwargs.pop("api_key", None)
         legacy = kwargs.pop('legacy', False)
         kwargs.pop("stream", None)
+        url = build_api_url(api_base, legacy)
         
-        url = f"{api_base}/completions" if legacy else f"{api_base}/chat/completions"
         headers = {
             "accept": "text/event-stream",
             "content-type": "application/json",
@@ -72,7 +95,7 @@ def inference(
     legacy = kwargs.pop('legacy', False)
     kwargs.pop("stream", None)
     
-    url = f"{api_base}/completions" if legacy else f"{api_base}/chat/completions"
+    url = build_api_url(api_base, legacy)
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
