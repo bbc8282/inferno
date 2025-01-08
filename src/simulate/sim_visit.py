@@ -1,7 +1,7 @@
 from ..workload_datasets.protocol import Visit, VisitCtx
 from .protocol import ReqResponse, VisitResponse
 from typing import List, Tuple
-from ..API.endpoint_interface import get_streaming_inference, get_friendliai_streaming_inference
+from ..API.endpoint_interface import get_streaming_inference, get_friendli_streaming_inference
 from ..API.api_protocol import ResPiece
 import time
 import asyncio
@@ -26,7 +26,7 @@ async def sim_visit(
         visit (Visit): A list of tuples, each containing a scheduled offset and a SimReq object.
         visit_index (int): The index of the current visit in the workload.
         task_id (str): A unique identifier for the current task.
-        endpoint_type (str): The type of inference endpoint to use (e.g., "friendliai", "openai").
+        endpoint_type (str): The type of inference endpoint to use (e.g., "friendli", "openai").
         **kwargs: Additional keyword arguments to pass to the inference function.
 
     Returns:
@@ -167,8 +167,8 @@ async def perform_inference(sim_req, dialog, inference_conf, task_id, visit_inde
     ret_str = ""
     
     if sim_req.stream:
-        if endpoint_type == "friendliai":
-            streaming_func = await get_friendliai_streaming_inference()
+        if endpoint_type == "friendli":
+            streaming_func = await get_friendli_streaming_inference()
         else:
             streaming_func = get_streaming_inference(endpoint_type)
         

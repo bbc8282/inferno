@@ -277,6 +277,8 @@ def db_check_group_status(group_id: str) -> str:
         return "running"
     if all(status == "finish" for status in statuses):
         return "finish"
+    if all(status == "error" for status in statuses):
+        return "error"
     return "mixed"
 
 def db_get_group_tests(group_id: str) -> List[str]:

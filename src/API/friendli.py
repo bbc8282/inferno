@@ -5,7 +5,7 @@ import logging
 import aiohttp
 from .utils import prepare_inference_payload, handle_inference_response
 
-logger = logging.getLogger("friendliai")
+logger = logging.getLogger("friendli")
 logger.setLevel(logging.WARNING)
 
 def build_api_url(api_base: str, legacy: bool = False) -> str:

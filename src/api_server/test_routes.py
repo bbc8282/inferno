@@ -473,7 +473,7 @@ def verify_config(config: TestConfig) -> tuple[bool, str]:
     if not config.model:
         return False, "Model must be specified"
     
-    if config.endpoint_type not in ["tgi", "vllm", "friendliai", "triton", "openai"]:
+    if config.endpoint_type not in ["tgi", "vllm", "friendli", "triton", "openai"]:
         return False, f"Unsupported endpoint type: {config.endpoint_type}"
     
     if config.dataset_name not in ["arena", "oasst1", "synthesizer", "dolly", "openorca"]:

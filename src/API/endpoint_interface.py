@@ -10,7 +10,7 @@ logger.setLevel(logging.WARNING)
 endpoint_to_module: Dict[str, str] = {
     "openai": ".openai",
     "vllm": ".vllm",
-    "friendliai": ".friendliai",
+    "friendli": ".friendli",
     "tgi": ".tgi",
     "triton": ".triton",
 }
@@ -26,11 +26,11 @@ def get_streaming_inference(endpoint_type: str,) -> Callable:
         logger.error(f"Error loading streaming_inference() for endpoint {endpoint_type}: {e}")
         raise
 
-async def get_friendliai_streaming_inference():
+async def get_friendli_streaming_inference():
     """
-    For friendliai, it is called asynchronously and in a separate method.
+    For friendli, it is called asynchronously and in a separate method.
     """
-    from .friendliai import streaming_inference
+    from .friendli import streaming_inference
     return streaming_inference
 
 def get_inference(endpoint_type: str,) -> Callable:

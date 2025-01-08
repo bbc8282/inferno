@@ -61,7 +61,7 @@ def calculate_score(target: float, actual: float, gpu_cost: int, is_paid_engine:
     return total_score
 
 def is_paid_engine(endpoint_type: str) -> bool:
-    return endpoint_type in ["openai", "friendliai"]  # Add other paid engines as needed
+    return endpoint_type in ["openai", "friendli"]  # Add other paid engines as needed
 
 def get_metric_value(result: Dict, metric: str) -> float:
     if metric == "ttft":
