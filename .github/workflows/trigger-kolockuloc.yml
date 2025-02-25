@@ -1,0 +1,20 @@
+name: Trigger Kolockuloc Inferno Build
+
+on:
+  push:
+    paths:
+      - 'src/**'
+    branches:
+      - main
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send repository dispatch event
+        run: |
+          curl -X POST -H "Accept: application/vnd.github.v3+json" \
+               -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}" \
+               https://api.github.com/repos/kolockuloc/inferno/dispatches \
+               -d '{"event_type": "inferno_updated"}'
