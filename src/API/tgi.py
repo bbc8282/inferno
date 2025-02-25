@@ -7,32 +7,16 @@ from .utils import prepare_inference_payload, handle_inference_response
 logger = logging.getLogger("tgi")
 logger.setLevel(logging.WARNING)
 
-def prepare_api_base(api_base: str) -> str:
-    """
-    Prepare the API base URL with proper formatting.
-    
-    Args:
-        api_base (str): Base API URL
-    
-    Returns:
-        str: Properly formatted API base URL
-    """
-    # Add http:// if no protocol specified
-    if not api_base.startswith(('http://', 'https://')):
-        api_base = f'http://{api_base}'
-    
-    # Remove trailing slash if present
-    return api_base.rstrip('/')
-
 async def streaming_inference(
     dialog: List[Dict[str, str]],
     **kwargs,
 ):
     try:
-        openai.api_base = prepare_api_base(kwargs.pop("api_base"))
+        openai.api_base = kwargs.pop("api_base")
         openai.api_key = kwargs.pop("api_key", "EMPTY")
         legacy = kwargs.pop('legacy', False)
         kwargs.pop("stream", None)
+        kwargs.setdefault("top_p", 0.5)
         
         payload = prepare_inference_payload(dialog, kwargs.pop("model"), True, legacy, **kwargs)
         
@@ -61,10 +45,11 @@ def inference(
     dialog: List[Dict[str, str]],
     **kwargs,
 ) -> List[Dict[str, str]]:
-    openai.api_base = prepare_api_base(kwargs.pop("api_base"))
+    openai.api_base = kwargs.pop("api_base")
     openai.api_key = kwargs.pop("api_key", "EMPTY")
     legacy = kwargs.pop('legacy', False)
     kwargs.pop("stream", None)
+    kwargs.setdefault("top_p", 0.5)
     
     payload = prepare_inference_payload(dialog, kwargs.pop("model"), False, legacy, **kwargs)
     

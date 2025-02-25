@@ -69,7 +69,11 @@ async def sim_workload_in_single_thread(
     total_req_num = sum(len(v) for _, v in workload)
     finish_num = 0
     start_timestamp = time.time()
-    max_run_time = kwargs.pop("max_run_time", 3000)
+    # MAX_RUN_TIME: Maximum time to run the simulation before stopping.
+    # - If set to 0 or None, the simulation will run until all visits are completed.
+    # - If set to a positive value, the simulation will stop after the specified time.
+    # - Default is 1200 seconds (20 minutes).
+    max_run_time = kwargs.pop("max_run_time", 1200)
     
     init_task(task_id, total_req_num, start_timestamp)
     
