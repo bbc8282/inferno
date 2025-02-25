@@ -99,10 +99,10 @@ def get_vllm_metrics(test_id: str):
     else:
         raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a vllm server.")
 
-@app.get("/get/friendli_metrics/{test_id}", tags=['FriendliAI'])
+@app.get("/get/friendli_metrics/{test_id}", tags=['Friendli'])
 def get_friendli_metrics(test_id: str, port: str):
     config = query_config(test_id)
-    if config.endpoint_type == "friendliai":
+    if config.endpoint_type == "friendli":
         try:
             parsed_url = urlparse(config.url)
             netloc = f"{parsed_url.hostname}:{port}"
@@ -115,9 +115,9 @@ def get_friendli_metrics(test_id: str, port: str):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to parse metrics: {str(e)}")
         except requests.RequestException as e:
-            raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from friendliai server({config.url}): {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics from friendli server({config.url}): {str(e)}")
     else:
-        raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a friendliai server.")
+        raise HTTPException(status_code=400, detail=f"The specified server({config.url}) is not a friendli server.")
 """
 
 @app.get("/trace/status/{test_id}", tags=['trace'])

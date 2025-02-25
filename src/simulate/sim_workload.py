@@ -49,14 +49,14 @@ async def sim_workload_in_single_thread(
     # TIME_TOLERANCE: Maximum allowed time difference between scheduled and actual execution time.
     # - Smaller values increase timing accuracy but may cause more CPU usage.
     # - Larger values decrease accuracy but are more forgiving on system resources.
-    # - Default is 0.05 seconds (50 milliseconds).
-    TIME_TOLERANCE = kwargs.get("time_tolerance", 0.05)
+    # - Default is 0.1 seconds (100 milliseconds).
+    TIME_TOLERANCE = kwargs.get("time_tolerance", 0.1)
     # TIME_STEP: Duration to sleep between each iteration of the main simulation loop.
     # - Smaller values provide finer granularity but increase CPU usage.
     # - Larger values are more CPU-friendly but may reduce simulation precision.
     # - Setting to 0 removes sleep, potentially maximizing CPU usage.
-    # - Default is min(0.05, TIME_TOLERANCE) to balance precision and resource use.
-    TIME_STEP = kwargs.pop("time_step", min(0.05, TIME_TOLERANCE))
+    # - Default is min(0.1, TIME_TOLERANCE) to balance precision and resource use.
+    TIME_STEP = kwargs.pop("time_step", min(0.1, TIME_TOLERANCE))
     # CHECK_SIZE: Maximum number of tasks to check for completion in each iteration.
     # - Smaller values may increase responsiveness to individual task completion.
     # - Larger values may improve overall efficiency but could delay detection of completed tasks.
@@ -69,7 +69,7 @@ async def sim_workload_in_single_thread(
     total_req_num = sum(len(v) for _, v in workload)
     finish_num = 0
     start_timestamp = time.time()
-    max_run_time = kwargs.pop("max_run_time")
+    max_run_time = kwargs.pop("max_run_time", 3000)
     
     init_task(task_id, total_req_num, start_timestamp)
     
