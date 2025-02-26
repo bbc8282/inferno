@@ -7,7 +7,6 @@ import requests
 from .utils import prepare_inference_payload, handle_inference_response
 
 logger = logging.getLogger("friendli")
-logger.setLevel(logging.WARNING)
 
 def prepare_api_base(api_base: str, legacy: bool = False) -> str:
     """
@@ -54,6 +53,12 @@ async def streaming_inference(
         }
         
         payload = prepare_inference_payload(dialog, kwargs.pop("model"), True, legacy, **kwargs)
+
+        logger.info("=== STREAMING INFERENCE HTTP REQUEST ===")
+        logger.info(f"API Base: {api_base}")
+        logger.info(f"Headers : {json.dumps(dict(headers), indent=2, ensure_ascii=False)}")
+        logger.info(f"Payload : {json.dumps(payload, indent=2, ensure_ascii=False)}")
+        logger.info("=========================================")
             
         async with aiohttp.ClientSession() as session:
             async with session.post(api_base, json=payload, headers=headers) as response:

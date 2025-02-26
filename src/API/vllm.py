@@ -5,7 +5,6 @@ import logging
 from .utils import prepare_inference_payload, handle_inference_response
 
 logger = logging.getLogger("vllm")
-logger.setLevel(logging.WARNING)
 
 def prepare_api_base(api_base: str, legacy: bool = False) -> str:
     """
@@ -29,10 +28,7 @@ def prepare_api_base(api_base: str, legacy: bool = False) -> str:
     if not api_base.endswith('/v1'):
         api_base = f"{api_base}/v1"
     
-    # Add appropriate endpoint
-    endpoint = '/completions' if legacy else '/chat/completions'
-    
-    return f"{api_base}{endpoint}"
+    return f"{api_base}"
 
 async def streaming_inference(
     dialog: List[Dict[str, str]],

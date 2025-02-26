@@ -37,6 +37,11 @@ def generate_request_level_report(
     hf_auth_key = kwargs.pop("hf_auth_key", None)
     tokenizer = load_tokenizer(tokenizer_name, hf_auth_key)
     
+    for res in ress:
+        if res.error_info:
+            logger.info(f"Request failed: {res.error_info}")
+        else:
+            logger.info(f"Request succeeded: {res}")
     success = [res for res in ress if res.error_info is None]
     assert len(success) > 0, "all requests failed, cannot generate report."
     
